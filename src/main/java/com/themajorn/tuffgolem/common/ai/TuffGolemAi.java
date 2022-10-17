@@ -19,6 +19,7 @@ import net.minecraft.world.entity.ai.behavior.*;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.animal.allay.AllayAi;
 import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.animal.goat.GoatAi;

@@ -24,9 +24,12 @@ import net.minecraft.world.entity.animal.*;
 import net.minecraft.world.entity.npc.InventoryCarrier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.client.model.CompositeModel;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
@@ -112,6 +115,18 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     protected @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
         ItemStack itemInPlayerHand = player.getItemInHand(hand);
         ItemStack itemInTuffGolemHand = this.getItemInHand(InteractionHand.MAIN_HAND);
+        Item specificItemInPlayerHand = itemInPlayerHand.getItem();
+
+        if (specificItemInPlayerHand instanceof DyeItem && player.isCrouching()) {
+            DyeColor dyecolor = ((DyeItem)specificItemInPlayerHand).getDyeColor();
+            if (dyecolor != this.getCloakColor()) {
+                this.setCloakColor(dyecolor);
+                if (!player.getAbilities().instabuild) {
+                    itemInPlayerHand.shrink(1);
+                }
+                return InteractionResult.SUCCESS;
+            }
+        }
 
         if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty()) {
             ItemStack playerItemCopy = itemInPlayerHand.copy();
@@ -149,11 +164,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     public void setPlayerCreated(boolean playerCreated) {
-        //byte b0 = this.entityData.get(DATA_FLAGS_ID);
+        byte b0 = this.entityData.get(DATA_FLAGS_ID);
         if (playerCreated) {
-            //this.entityData.set(DATA_FLAGS_ID, (byte)(b0 | 1));
+            this.entityData.set(DATA_FLAGS_ID, (byte)(b0 | 1));
         } else {
-           // this.entityData.set(DATA_FLAGS_ID, (byte)(b0 & -2));
+           this.entityData.set(DATA_FLAGS_ID, (byte)(b0 & -2));
         }
 
     }
@@ -174,7 +189,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
-        //this.setPlayerCreated(tag.getBoolean("PlayerCreated"));
+        this.setPlayerCreated(tag.getBoolean("PlayerCreated"));
         if (tag.contains("CloakColor", 99)) {
             this.setCloakColor(DyeColor.byId(tag.getInt("CloakColor")));
         }
