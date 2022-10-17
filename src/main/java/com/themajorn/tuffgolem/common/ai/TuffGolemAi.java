@@ -6,6 +6,7 @@ import com.mojang.datafixers.util.Pair;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import com.themajorn.tuffgolem.core.registry.ModActivities;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
+import net.minecraft.client.renderer.entity.layers.WolfCollarLayer;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,10 +18,14 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.*;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.allay.AllayAi;
 import net.minecraft.world.entity.animal.goat.Goat;
+import net.minecraft.world.entity.animal.goat.GoatAi;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.PumpkinBlock;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -40,11 +45,11 @@ public class TuffGolemAi {
     }
 
     private static void initCoreActivity(Brain<TuffGolemEntity> brain) {
-        brain.addActivity(Activity.CORE, 0, ImmutableList.of(new Swim(0.8F),
-                new LookAtTargetSink(45, 90), new MoveToTargetSink(),
-                new CountDownCooldownTicks(MemoryModuleType.TEMPTATION_COOLDOWN_TICKS),
-                new CountDownCooldownTicks(ModMemoryModules.ANIMATE_FROM_STATUE_TICKS),
-                new CountDownCooldownTicks(MemoryModuleType.RAM_COOLDOWN_TICKS)));
+        brain.addActivity(Activity.CORE, 0, ImmutableList.of(
+                new Swim(0.8F),
+                new LookAtTargetSink(45, 90),
+                new MoveToTargetSink(),
+                new CountDownCooldownTicks(ModMemoryModules.SPAWN_POSITION_COOLDOWN_TICKS)));
     }
 
     private static void initIdleActivity(Brain<TuffGolemEntity> brain) {
@@ -52,8 +57,7 @@ public class TuffGolemAi {
                 ImmutableList.of(Pair.of(0, new GoToWantedItem<>((entity) -> {return true;}, 1.75F, true, 32)),
                                 Pair.of(1, new ReturnToSpawnPosition<>(TuffGolemAi::getSpawnPosition, 1.25F)),
                                 Pair.of(2, new StayCloseToSpawnPosition<>(TuffGolemAi::getSpawnPosition, 4, 16, 2.25F)),
-                                Pair.of(3, new RunSometimes<>(new SetEntityLookTarget((p_218434_) -> {return true;}, 6.0F), UniformInt.of(30, 60))),
-                                Pair.of(4, new RunOne<>(ImmutableList.of(Pair.of(new WalkingRandomStroll(1.0F), 2),
+                                Pair.of(4, new RunOne<>(ImmutableList.of(Pair.of(new RandomStroll(1.0F), 2),
                                 Pair.of(new SetWalkTargetFromLookTarget(1.0F, 3), 2),
                                 Pair.of(new DoNothing(30, 60), 1))))), ImmutableSet.of());
     }
@@ -84,8 +88,7 @@ public class TuffGolemAi {
             Optional<UUID> optional = livingEntity.getBrain().getMemory(MemoryModuleType.LIKED_PLAYER);
             if (optional.isPresent()) {
                 Entity entity = serverlevel.getEntity(optional.get());
-                if (entity instanceof ServerPlayer) {
-                    ServerPlayer serverplayer = (ServerPlayer)entity;
+                if (entity instanceof ServerPlayer serverplayer) {
                     if ((serverplayer.gameMode.isSurvival() || serverplayer.gameMode.isCreative()) && serverplayer.closerThan(livingEntity, 64.0D)) {
                         return Optional.of(serverplayer);
                     }

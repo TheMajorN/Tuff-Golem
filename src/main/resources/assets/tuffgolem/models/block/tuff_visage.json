@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "tuffgolem:blocks/tuff_visage",
+    "side": "minecraft:block/tuff",
+    "top": "minecraft:block/tuff"
+  }
+}

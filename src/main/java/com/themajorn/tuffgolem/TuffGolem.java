@@ -1,7 +1,9 @@
 package com.themajorn.tuffgolem;
 
 import com.mojang.logging.LogUtils;
+import com.themajorn.tuffgolem.core.registry.ModBlocks;
 import com.themajorn.tuffgolem.core.registry.ModEntities;
+import com.themajorn.tuffgolem.core.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
@@ -26,6 +28,8 @@ public class TuffGolem
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
 
+        ModItems.ITEMS.register(modEventBus);
+        ModBlocks.BLOCKS.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);

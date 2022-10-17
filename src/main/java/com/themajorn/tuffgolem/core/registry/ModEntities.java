@@ -10,11 +10,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 public class ModEntities {
-    public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES,
-            TuffGolem.MOD_ID);
+    public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, TuffGolem.MOD_ID);
 
     public static final RegistryObject<EntityType<TuffGolemEntity>> TUFF_GOLEM = ENTITIES.register("tuff_golem",
             () -> EntityType.Builder.of(TuffGolemEntity::new, MobCategory.CREATURE)
-                    .sized(1.0F, 1.4F)
+                    .sized(1.0F, 1.0F)
                     .build(new ResourceLocation(TuffGolem.MOD_ID, "tuff_golem").toString()));
 }
