@@ -38,7 +38,6 @@ public class TuffGolemAi {
     public static Brain<?> makeBrain(Brain<TuffGolemEntity> brain) {
         initCoreActivity(brain);
         initIdleActivity(brain);
-        initAnimateActivity(brain);
         brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
         brain.setDefaultActivity(Activity.IDLE);
         brain.useDefaultActivity();
@@ -49,70 +48,16 @@ public class TuffGolemAi {
         brain.addActivity(Activity.CORE, 0, ImmutableList.of(
                 new Swim(0.8F),
                 new LookAtTargetSink(45, 90),
-                new MoveToTargetSink(),
-                new CountDownCooldownTicks(ModMemoryModules.SPAWN_POSITION_COOLDOWN_TICKS)));
+                new MoveToTargetSink()
+                ));
     }
 
     private static void initIdleActivity(Brain<TuffGolemEntity> brain) {
         brain.addActivityWithConditions(Activity.IDLE,
-                ImmutableList.of(Pair.of(0, new GoToWantedItem<>((entity) -> {return true;}, 1.75F, true, 32)),
-                                Pair.of(1, new ReturnToSpawnPosition<>(TuffGolemAi::getSpawnPosition, 1.25F)),
-                                Pair.of(2, new StayCloseToSpawnPosition<>(TuffGolemAi::getSpawnPosition, 4, 16, 2.25F)),
-                                Pair.of(4, new RunOne<>(ImmutableList.of(Pair.of(new RandomStroll(1.0F), 2),
+                ImmutableList.of(Pair.of(0, new RunOne<>(ImmutableList.of(Pair.of(new RandomStroll(1.0F), 2),
                                 Pair.of(new SetWalkTargetFromLookTarget(1.0F, 3), 2),
-                                Pair.of(new DoNothing(30, 60), 1))))), ImmutableSet.of());
+                                Pair.of(new DoNothing(30, 60), 1))))),
+
+                ImmutableSet.of());
     }
-
-    private static Optional<PositionTracker> getSpawnPosition(LivingEntity entity) {
-        Brain<?> brain = entity.getBrain();
-        Optional<GlobalPos> optional = brain.getMemory(ModMemoryModules.SPAWN_POSITION);
-        if (optional.isPresent()) {
-            GlobalPos globalpos = optional.get();
-            if (shouldReturnToSpawn(entity, brain, globalpos)) {
-                return Optional.of(new BlockPosTracker(globalpos.pos().above()));
-            }
-
-            brain.eraseMemory(ModMemoryModules.SPAWN_POSITION);
-        }
-        return getLikedPlayerPositionTracker(entity);
-    }
-
-    private static Optional<PositionTracker> getLikedPlayerPositionTracker(LivingEntity entity) {
-        return getLikedPlayer(entity).map((player) -> {
-            return new EntityTracker(player, true);
-        });
-    }
-
-    public static Optional<ServerPlayer> getLikedPlayer(LivingEntity livingEntity) {
-        Level level = livingEntity.getLevel();
-        if (!level.isClientSide() && level instanceof ServerLevel serverlevel) {
-            Optional<UUID> optional = livingEntity.getBrain().getMemory(MemoryModuleType.LIKED_PLAYER);
-            if (optional.isPresent()) {
-                Entity entity = serverlevel.getEntity(optional.get());
-                if (entity instanceof ServerPlayer serverplayer) {
-                    if ((serverplayer.gameMode.isSurvival() || serverplayer.gameMode.isCreative()) && serverplayer.closerThan(livingEntity, 64.0D)) {
-                        return Optional.of(serverplayer);
-                    }
-                }
-
-                return Optional.empty();
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private static boolean shouldReturnToSpawn(LivingEntity entity, Brain<?> brain, GlobalPos globalPos) {
-        Optional<Integer> optional = brain.getMemory(ModMemoryModules.SPAWN_POSITION_COOLDOWN_TICKS);
-        Level level = entity.getLevel();
-        return level.dimension() == globalPos.dimension() && optional.isPresent();
-    }
-
-
-    private static void initAnimateActivity(Brain<TuffGolemEntity> brain) {
-        brain.addActivityWithConditions(ModActivities.ANIMATE, ImmutableList.of(Pair.of(0, new AnimateMidAnimation(TIME_BETWEEN_ANIMATION_FROM_STATUE, SoundEvents.ANVIL_STEP)), Pair.of(1, new AnimateFromStatue<>(TIME_BETWEEN_ANIMATION_FROM_STATUE, 5, 5, 1.5F, (entity) -> {
-            return SoundEvents.ANVIL_DESTROY;
-        }))), ImmutableSet.of(Pair.of(MemoryModuleType.TEMPTING_PLAYER, MemoryStatus.VALUE_ABSENT), Pair.of(MemoryModuleType.BREED_TARGET, MemoryStatus.VALUE_ABSENT), Pair.of(MemoryModuleType.WALK_TARGET, MemoryStatus.VALUE_ABSENT), Pair.of(ModMemoryModules.ANIMATE_FROM_STATUE_TICKS, MemoryStatus.VALUE_ABSENT)));
-    }
-
 }

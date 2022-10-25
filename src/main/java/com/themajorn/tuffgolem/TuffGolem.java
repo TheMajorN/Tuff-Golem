@@ -22,7 +22,7 @@ import software.bernie.geckolib3.GeckoLib;
 public class TuffGolem
 {
     public static final String MOD_ID = "tuffgolem";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public TuffGolem() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();

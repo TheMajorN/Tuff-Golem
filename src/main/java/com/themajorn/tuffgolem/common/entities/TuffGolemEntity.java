@@ -1,19 +1,28 @@
 package com.themajorn.tuffgolem.common.entities;
 
 import com.google.common.collect.ImmutableList;
-import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
+import com.mojang.serialization.Dynamic;
+import com.themajorn.tuffgolem.TuffGolem;
+import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
+import com.themajorn.tuffgolem.core.registry.ModGameEvents;
+import net.minecraft.client.model.WolfModel;
+import net.minecraft.client.renderer.entity.WolfRenderer;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
@@ -23,14 +32,12 @@ import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.animal.*;
 import net.minecraft.world.entity.npc.InventoryCarrier;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.DyeItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.client.model.CompositeModel;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import software.bernie.geckolib3.core.AnimationState;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
@@ -51,6 +58,15 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                             SensorType.HURT_BY,
                             SensorType.NEAREST_ITEMS);
 
+    protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES =
+            ImmutableList.of(MemoryModuleType.PATH, MemoryModuleType.LOOK_TARGET,
+                    MemoryModuleType.WALK_TARGET,
+                    MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE);
+
+    private boolean isPetrified;
+    public boolean hasCloak;
+    private boolean isAnimating;
+
     private AnimationFactory factory = new AnimationFactory(this);
 
     public TuffGolemEntity(EntityType<? extends AbstractGolem> entityType, Level level) { super(entityType, level); }
@@ -64,10 +80,78 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(DATA_CLOAK_COLOR, DyeColor.RED.getId());
+        this.entityData.define(DATA_CLOAK_COLOR, DyeColor.WHITE.getId());
     }
 
-    /*
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (!this.level.isClientSide && this.isPetrified && !this.isAnimating && !this.isPathFinding() && this.onGround) {
+            this.isAnimating = true;
+            this.level.broadcastEntityEvent(this, (byte)8);
+        }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (this.isAlive()) {
+            /*
+            if (this.isInWaterRainOrBubble() || this.isOnGround()) {
+                this.isPetrified = true;
+                if (this.isAnimating && !this.level.isClientSide) {
+                    this.level.broadcastEntityEvent(this, (byte)56);
+                    this.cancelAnimate();
+                }
+            } else if ((this.isPetrified || this.isAnimating) && this.isAnimating) {
+                if (this.animateAnim == 0.0F) {
+                    this.playSound(SoundEvents.ANVIL_USE, this.getSoundVolume(), (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+                    this.gameEvent(ModGameEvents.ENTITY_ANIMATE);
+                }
+
+                this.animateAnim0 = this.animateAnim;
+                this.animateAnim += 0.05F;
+                if (this.animateAnim0 >= 2.0F) {
+                    this.isPetrified = false;
+                    this.isAnimating = false;
+                    this.animateAnim0 = 0.0F;
+                    this.animateAnim = 0.0F;
+                }
+
+                if (this.animateAnim > 0.4F) {
+                    float f = (float)this.getY();
+                    int i = (int)(Mth.sin((this.animateAnim - 0.4F) * (float)Math.PI) * 7.0F);
+                    Vec3 vec3 = this.getDeltaMovement();
+
+                    for(int j = 0; j < i; ++j) {
+                        float f1 = (this.random.nextFloat() * 2.0F - 1.0F) * this.getBbWidth() * 0.5F;
+                        float f2 = (this.random.nextFloat() * 2.0F - 1.0F) * this.getBbWidth() * 0.5F;
+                        this.level.addParticle(ParticleTypes.POOF, this.getX() + (double)f1, (double)(f + 0.8F), this.getZ() + (double)f2, vec3.x, vec3.y, vec3.z);
+                    }
+                }
+            }
+*/
+        }
+    }
+
+    public void cancelAnimate() {
+        this.isAnimating = false;
+    }
+
+    public boolean isPetrified() {
+        return this.isPetrified;
+    }
+    @Override
+    public void handleEntityEvent(byte handleByte) {
+        if (handleByte == 8) {
+            this.isAnimating = true;
+        } else if (handleByte == 56) {
+            this.cancelAnimate();
+        } else {
+            super.handleEntityEvent(handleByte);
+        }
+    }
+
     protected Brain.@NotNull Provider<TuffGolemEntity> brainProvider() {
         return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
     }
@@ -76,26 +160,15 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         return TuffGolemAi.makeBrain(this.brainProvider().makeBrain(dynamic));
     }
 
-    public static void updateActivity(TuffGolemEntity tuffGolem) {
-        tuffGolem.getBrain().setActiveActivityToFirstValid(ImmutableList.of(ModActivities.ANIMATE,
-                                                                            ModActivities.PICK_OUT,
-                                                                            Activity.IDLE,
-                                                                            ModActivities.PUT_BACK,
-                                                                            ModActivities.PETRIFY));
-    }
-
     public @NotNull Brain<TuffGolemEntity> getBrain() {
         return (Brain<TuffGolemEntity>)super.getBrain();
     }
 
-     */
-
     protected void customServerAiStep() {
         this.level.getProfiler().push("tuffGolemBrain");
-        //this.getBrain().tick((ServerLevel)this.level, this);
+        this.getBrain().tick((ServerLevel)this.level, this);
         this.level.getProfiler().pop();
         this.level.getProfiler().push("tuffGolemActivityUpdate");
-        //TuffGolemEntity.updateActivity(this);
         this.level.getProfiler().pop();
         super.customServerAiStep();
     }
@@ -128,13 +201,22 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             }
         }
 
-        if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty()) {
+        if (specificItemInPlayerHand instanceof BannerItem && player.isCrouching()) {
+            player.setItemInHand(hand, Items.STICK.getDefaultInstance());
+            hasCloak = true;
+        }
+
+        if (itemInPlayerHand.is(Items.STICK) && player.isCrouching()) {
+            player.setItemInHand(hand, Items.WHITE_BANNER.getDefaultInstance());
+            hasCloak = false;
+        }
+
+        if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && this.hasCloak) {
             ItemStack playerItemCopy = itemInPlayerHand.copy();
             playerItemCopy.setCount(1);
             this.setItemInHand(InteractionHand.MAIN_HAND, playerItemCopy);
             this.removeInteractionItem(player, itemInPlayerHand);
             this.level.playSound(player, this, SoundEvents.ANVIL_PLACE, SoundSource.NEUTRAL, 2.0F, 1.0F);
-            //this.getBrain().setMemory(ModMemoryModules.PLAYER_WHO_GAVE_ITEM, player.getUUID());
             return InteractionResult.SUCCESS;
         } else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
             this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -145,7 +227,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 BehaviorUtils.throwItem(this, itemClearStack, this.position());
             }
 
-            //this.getBrain().eraseMemory(ModMemoryModules.PLAYER_WHO_GAVE_ITEM);
             player.addItem(itemInTuffGolemHand);
             return InteractionResult.SUCCESS;
         } else {
@@ -214,7 +295,5 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public AnimationFactory getFactory() { return this.factory; }
 
     @Override
-    public @NotNull SimpleContainer getInventory() {
-        return this.inventory;
-    }
+    public @NotNull SimpleContainer getInventory() { return this.inventory; }
 }

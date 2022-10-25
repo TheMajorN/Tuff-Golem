@@ -33,15 +33,19 @@ public class TuffGolemModel<T extends LivingEntity & IAnimatable> extends Animat
 
     @Override
     public ResourceLocation getTextureResource(T object) {
-        return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+        if (!object.getMainHandItem().isEmpty()) {
+            return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+        } else {
+            return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+        }
     }
 
     @Override
     public ResourceLocation getAnimationResource(T animatable) {
         if (!animatable.getMainHandItem().isEmpty()) {
-            return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem.animation.json");
-        } else {
             return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem_holding.animation.json");
+        } else {
+            return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem.animation.json");
         }
     }
 }

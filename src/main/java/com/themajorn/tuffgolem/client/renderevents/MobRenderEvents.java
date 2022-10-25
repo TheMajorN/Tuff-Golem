@@ -1,6 +1,7 @@
 package com.themajorn.tuffgolem.client.renderevents;
 
 import com.themajorn.tuffgolem.TuffGolem;
+import com.themajorn.tuffgolem.client.renderers.TuffGolemCloakLayer;
 import com.themajorn.tuffgolem.client.renderers.TuffGolemRenderer;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import com.themajorn.tuffgolem.core.registry.ModEntities;

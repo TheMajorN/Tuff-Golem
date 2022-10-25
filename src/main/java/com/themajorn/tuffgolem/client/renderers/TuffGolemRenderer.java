@@ -10,10 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.entity.WolfRenderer;
-import net.minecraft.client.renderer.entity.ZombieRenderer;
+import net.minecraft.client.renderer.entity.*;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.client.renderer.entity.layers.WolfCollarLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -46,8 +43,8 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     private static final ResourceLocation MODEL_RESLOC = new ResourceLocation(TuffGolem.MOD_ID,
             "geo/tuff_golem.geo.json");
     public TuffGolemRenderer(EntityRendererProvider.Context renderManager) {
-        super(renderManager,
-                new TuffGolemModel<TuffGolemEntity>(MODEL_RESLOC, TEXTURE, "tuff_golem"));
+        super(renderManager, new TuffGolemModel<TuffGolemEntity>(MODEL_RESLOC, TEXTURE, "tuff_golem"));
+        this.addLayer(new TuffGolemCloakLayer(this));
         this.shadowRadius = 0.3F;
     }
 

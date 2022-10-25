@@ -10,8 +10,8 @@ version="${file.jarVersion}" #mandatory
 displayName="Tuff Golem" #mandatory
 
 logoFile="examplemod.png" #optional
-credits="Thanks for this example mod goes to Java" #optional
-authors="Love, Cheese and small house plants" #optional
+credits="Thanks to jakeItEasy for creating the entirety of the look and movements." #optional
+authors="jakeItEasy: Tuff Golem model, texture, & animations.  TheMajorN: Programming the Tuff Golem" #optional
 
 description='''
 This is a long form description of the mod. You can write whatever you want here
