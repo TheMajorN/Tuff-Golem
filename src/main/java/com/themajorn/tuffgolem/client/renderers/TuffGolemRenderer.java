@@ -14,12 +14,13 @@ import net.minecraft.client.renderer.entity.*;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.client.renderer.entity.layers.WolfCollarLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.example.client.DefaultBipedBoneIdents;
@@ -42,10 +43,14 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
             "textures/entities/tuff_golem.png");
     private static final ResourceLocation MODEL_RESLOC = new ResourceLocation(TuffGolem.MOD_ID,
             "geo/tuff_golem.geo.json");
+    private final ItemRenderer itemRenderer;
+    private final RandomSource random = RandomSource.create();
+
     public TuffGolemRenderer(EntityRendererProvider.Context renderManager) {
         super(renderManager, new TuffGolemModel<TuffGolemEntity>(MODEL_RESLOC, TEXTURE, "tuff_golem"));
         this.addLayer(new TuffGolemCloakLayer(this));
         this.shadowRadius = 0.3F;
+        this.itemRenderer = renderManager.getItemRenderer();
     }
 
     @NotNull
@@ -68,7 +73,7 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     @org.jetbrains.annotations.Nullable
     @Override
     protected ItemStack getHeldItemForBone(String boneName, TuffGolemEntity currentEntity) {
-        if ("held_item".equals(boneName)) {
+        if ("cape".equals(boneName)) {
             return currentEntity.getMainHandItem();
         }
         return null;
@@ -76,7 +81,7 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
 
     @Override
     protected ItemTransforms.TransformType getCameraTransformForItemAtBone(ItemStack boneItem, String boneName) {
-        if ("held_item".equals(boneName)) {
+        if ("cape".equals(boneName)) {
             return ItemTransforms.TransformType.THIRD_PERSON_RIGHT_HAND;
         }
         return ItemTransforms.TransformType.NONE;
@@ -89,28 +94,16 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     }
 
     @Override
-    public void renderRecursively(GeoBone bone, PoseStack stack, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
-        super.renderRecursively(bone, stack, bufferIn, packedLightIn, packedOverlayIn, red, green, blue, alpha);
-    }
-
-    @Override
     protected void preRenderItem(PoseStack matrixStack, ItemStack item, String boneName, TuffGolemEntity currentEntity, IBone bone) {
-        if (item == this.mainHand || item == this.offHand) {
-            matrixStack.mulPose(Vector3f.XP.rotationDegrees(-90.0F));
-            boolean isShield = item.getItem() instanceof ShieldItem;
-            if (item == this.mainHand) {
-                if (isShield) {
-                    matrixStack.translate(0.0, 1.125, 0.0);
-                } else {
-                    matrixStack.mulPose(Vector3f.XP.rotationDegrees(90));
-                    matrixStack.translate(0.0, 0.6, -0.45);
-                    matrixStack.scale(0.7f, 0.7f, 0.7f);
-                    Minecraft.getInstance().getItemRenderer().renderStatic(
-                            this.currentEntityBeingRendered.getItemInHand(InteractionHand.MAIN_HAND),
+        if (item == this.mainHand) {
+            matrixStack.translate(0.0, 0.18, -0.56);
+            matrixStack.scale(0.75F, 0.75F, 0.75F);
+            float f3 = currentEntity.getSpin(1.0F);
+            matrixStack.mulPose(Vector3f.YP.rotation(f3));
+            Minecraft.getInstance().getItemRenderer()
+                    .renderStatic(this.currentEntityBeingRendered.getItemInHand(InteractionHand.MAIN_HAND),
                             ItemTransforms.TransformType.THIRD_PERSON_RIGHT_HAND,
                             1, 1, matrixStack, this.rtb, 1);
-                }
-            }
         }
     }
 

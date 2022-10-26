@@ -66,10 +66,15 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     private boolean isPetrified;
     public boolean hasCloak;
     private boolean isAnimating;
+    private int age;
+    public final float bobOffs;
 
     private AnimationFactory factory = new AnimationFactory(this);
 
-    public TuffGolemEntity(EntityType<? extends AbstractGolem> entityType, Level level) { super(entityType, level); }
+    public TuffGolemEntity(EntityType<? extends AbstractGolem> entityType, Level level) {
+        super(entityType, level);
+        this.bobOffs = this.random.nextFloat() * (float)Math.PI * 2.0F;
+    }
 
     public static AttributeSupplier.Builder setAttributes() {
         return Mob.createMobAttributes()
@@ -131,6 +136,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 }
             }
 */
+            if (this.age < 36000) {
+                this.age++;
+            } else {
+                this.age = 1;
+            }
         }
     }
 
@@ -274,6 +284,14 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         if (tag.contains("CloakColor", 99)) {
             this.setCloakColor(DyeColor.byId(tag.getInt("CloakColor")));
         }
+    }
+
+    public int getAge() {
+        return this.age;
+    }
+
+    public float getSpin(float i) {
+        return ((float)this.getAge() + i) / 20.0F + this.bobOffs;
     }
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
