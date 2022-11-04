@@ -2,8 +2,10 @@ package com.themajorn.tuffgolem.core.registry;
 
 import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.blocks.TuffVisage;
+import net.minecraft.core.Registry;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarvedPumpkinBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.Material;

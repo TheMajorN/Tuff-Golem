@@ -1,9 +1,7 @@
 package com.themajorn.tuffgolem;
 
 import com.mojang.logging.LogUtils;
-import com.themajorn.tuffgolem.core.registry.ModBlocks;
-import com.themajorn.tuffgolem.core.registry.ModEntities;
-import com.themajorn.tuffgolem.core.registry.ModItems;
+import com.themajorn.tuffgolem.core.registry.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
@@ -31,6 +29,8 @@ public class TuffGolem
         ModItems.ITEMS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
+        ModActivities.ACTIVITIES.register(modEventBus);
+        ModMemoryModules.MEMORY_MODULES.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
 
@@ -38,7 +38,6 @@ public class TuffGolem
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-
         LOGGER.info("HELLO FROM COMMON SETUP");
         LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
     }
@@ -52,8 +51,7 @@ public class TuffGolem
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static class ClientModEvents {
         @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event)
-        {
+        public static void onClientSetup(FMLClientSetupEvent event) {
             // Some client setup code
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());

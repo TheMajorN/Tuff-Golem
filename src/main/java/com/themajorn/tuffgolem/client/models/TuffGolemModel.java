@@ -8,40 +8,36 @@ import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.model.AnimatedGeoModel;
 
-public class TuffGolemModel<T extends LivingEntity & IAnimatable> extends AnimatedGeoModel<T> {
-
-    protected final ResourceLocation MODEL_RESLOC;
-    protected final ResourceLocation TEXTURE_DEFAULT;
-    protected final String ENTITY_REGISTRY_PATH_NAME;
-
-    public TuffGolemModel(ResourceLocation model, ResourceLocation textureDefault,
-                                              String entityName) {
-        super();
-        this.MODEL_RESLOC = model;
-        this.TEXTURE_DEFAULT = textureDefault;
-        this.ENTITY_REGISTRY_PATH_NAME = entityName;
-    }
+public class TuffGolemModel extends AnimatedGeoModel<TuffGolemEntity> {
 
     @Override
-    public ResourceLocation getModelResource(T object) {
-        if (!object.getMainHandItem().isEmpty()) {
-            return new ResourceLocation(TuffGolem.MOD_ID, "geo/tuff_golem_holding.geo.json");
+    public ResourceLocation getModelResource(TuffGolemEntity object) {
+        if (object.getMainHandItem().isEmpty()) {
+            return  new ResourceLocation(TuffGolem.MOD_ID, "geo/tuff_golem.geo.json");
         } else {
-            return new ResourceLocation(TuffGolem.MOD_ID, "geo/tuff_golem.geo.json");
+            return  new ResourceLocation(TuffGolem.MOD_ID, "geo/tuff_golem_holding.geo.json");
         }
     }
 
     @Override
-    public ResourceLocation getTextureResource(T object) {
-        return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+    public ResourceLocation getTextureResource(TuffGolemEntity object) {
+        if (object.isPetrified()) {
+            return  new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified.png");
+        } else {
+            return  new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+        }
     }
 
     @Override
-    public ResourceLocation getAnimationResource(T animatable) {
-        if (!animatable.getMainHandItem().isEmpty()) {
-            return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem_holding.animation.json");
-        } else {
-            return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem.animation.json");
-        }
+    public ResourceLocation getAnimationResource(TuffGolemEntity animatable) {
+            if (animatable.getMainHandItem().isEmpty()) {
+                if (animatable.isPetrified()) {
+                    return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem_petrified.animation.json");
+                } else {
+                    return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem.animation.json");
+                }
+            } else {
+                return new ResourceLocation(TuffGolem.MOD_ID, "animations/tuff_golem_holding.animation.json");
+            }
     }
 }

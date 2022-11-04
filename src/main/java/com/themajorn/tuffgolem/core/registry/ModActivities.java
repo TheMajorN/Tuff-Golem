@@ -1,18 +1,22 @@
 package com.themajorn.tuffgolem.core.registry;
 
+import com.themajorn.tuffgolem.TuffGolem;
+import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
 import net.minecraft.core.Registry;
 import net.minecraft.world.entity.schedule.Activity;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 public class ModActivities {
 
-    public static final Activity ANIMATE = register("animate");
-    public static final Activity PETRIFY = register("petrify");
-    public static final Activity PICK_OUT = register("pick_out");
-    public static final Activity PUT_BACK = register("put_back");
+    public static final DeferredRegister<Activity> ACTIVITIES = DeferredRegister.create(ForgeRegistries.ACTIVITIES, TuffGolem.MOD_ID);
 
 
-    private static Activity register(String string) {
-        return Registry.register(Registry.ACTIVITY, string, new Activity(string));
-    }
+    public static final RegistryObject<Activity> ANIMATE = ACTIVITIES.register("animate",
+            () -> new Activity("animate"));
+
+    public static final RegistryObject<Activity> PICK_OUT = ACTIVITIES.register("pick_out",
+            () -> new Activity("pick_out"));
 
 }

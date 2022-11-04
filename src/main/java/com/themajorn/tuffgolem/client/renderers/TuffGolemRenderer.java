@@ -39,24 +39,20 @@ import javax.annotation.Nullable;
 
 public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(TuffGolem.MOD_ID,
-            "textures/entities/tuff_golem.png");
-    private static final ResourceLocation MODEL_RESLOC = new ResourceLocation(TuffGolem.MOD_ID,
-            "geo/tuff_golem.geo.json");
-    private final ItemRenderer itemRenderer;
-    private final RandomSource random = RandomSource.create();
-
     public TuffGolemRenderer(EntityRendererProvider.Context renderManager) {
-        super(renderManager, new TuffGolemModel<TuffGolemEntity>(MODEL_RESLOC, TEXTURE, "tuff_golem"));
+        super(renderManager, new TuffGolemModel());
         this.addLayer(new TuffGolemCloakLayer(this));
         this.shadowRadius = 0.3F;
-        this.itemRenderer = renderManager.getItemRenderer();
     }
 
     @NotNull
     @Override
     public ResourceLocation getTextureLocation(@NotNull TuffGolemEntity instance) {
-        return  new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+        if (instance.isPetrified()) {
+            return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified.png");
+        } else {
+            return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+        }
     }
 
     @Override
@@ -96,8 +92,8 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     @Override
     protected void preRenderItem(PoseStack matrixStack, ItemStack item, String boneName, TuffGolemEntity currentEntity, IBone bone) {
         if (item == this.mainHand) {
-            matrixStack.translate(0.0, 0.18, -0.56);
-            matrixStack.scale(0.75F, 0.75F, 0.75F);
+            matrixStack.translate(0.0, 0.18, -0.6);
+            matrixStack.scale(0.7F, 0.7F, 0.7F);
             float f3 = currentEntity.getSpin(1.0F);
             matrixStack.mulPose(Vector3f.YP.rotation(f3));
             Minecraft.getInstance().getItemRenderer()

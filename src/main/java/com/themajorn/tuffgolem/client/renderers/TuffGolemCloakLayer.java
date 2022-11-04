@@ -22,11 +22,10 @@ public class TuffGolemCloakLayer extends GeoLayerRenderer<TuffGolemEntity> {
 
     @Override
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, TuffGolemEntity tuffGolem, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-        if (tuffGolem.hasCloak && !tuffGolem.isInvisible()) {
+        if (tuffGolem.hasCloak() && !tuffGolem.isInvisible()) {
             float[] diffuseColors = tuffGolem.getCloakColor().getTextureDiffuseColors();
             RenderType cameo =  RenderType.armorCutoutNoCull(LAYER);
             matrixStackIn.pushPose();
-            //Move or scale the model as you see fit
             matrixStackIn.scale(1.0f, 1.0f, 1.0f);
             matrixStackIn.translate(0.0d, 0.0d, 0.0d);
             if (tuffGolem.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
