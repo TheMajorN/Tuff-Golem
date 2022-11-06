@@ -31,6 +31,7 @@ public class TuffGolem
         ModEntities.ENTITIES.register(modEventBus);
         ModActivities.ACTIVITIES.register(modEventBus);
         ModMemoryModules.MEMORY_MODULES.register(modEventBus);
+        ModSensors.SENSORS.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
 

@@ -4,15 +4,16 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Dynamic;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
+import com.themajorn.tuffgolem.core.registry.ModSensors;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -26,17 +27,10 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.animal.*;
-import net.minecraft.world.entity.animal.allay.Allay;
-import net.minecraft.world.entity.animal.allay.AllayAi;
-import net.minecraft.world.entity.animal.goat.Goat;
-import net.minecraft.world.entity.animal.goat.GoatAi;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.npc.InventoryCarrier;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -51,39 +45,39 @@ import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 
-import java.util.Objects;
-
 public class TuffGolemEntity extends AbstractGolem implements IAnimatable, InventoryCarrier {
     protected static final EntityDataAccessor<Byte> DATA_FLAGS_ID = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> DATA_CLOAK_COLOR = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Byte> DATA_IS_PETRIFIED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_IS_ANIMATED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_HAS_CLOAK = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private final SimpleContainer inventory = new SimpleContainer(1);
 
     protected static final ImmutableList<SensorType<? extends Sensor<? super TuffGolemEntity>>> SENSOR_TYPES =
             ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES,
                             SensorType.NEAREST_PLAYERS,
                             SensorType.HURT_BY,
-                            SensorType.NEAREST_ITEMS);
+                            SensorType.NEAREST_ITEMS,
+                            ModSensors.NEAREST_ITEM_FRAMES.get());
 
     protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES =
-            ImmutableList.of(MemoryModuleType.PATH, MemoryModuleType.LOOK_TARGET,
+            ImmutableList.of(MemoryModuleType.PATH,
+                    MemoryModuleType.LOOK_TARGET,
                     MemoryModuleType.WALK_TARGET,
-                    MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, ModMemoryModules.SELECTED_ITEM_FRAME_POSITION.get(),
-                    ModMemoryModules.SELECTED_ITEM_FRAME.get(), ModMemoryModules.ITEM_FRAME_POSITION.get(),
-                    ModMemoryModules.ITEM_FRAME_COOLDOWN_TICKS.get(),
+                    MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE,
+                    ModMemoryModules.SELECTED_ITEM_FRAME_POSITION.get(),
+                    ModMemoryModules.SELECTED_ITEM_FRAME.get(),
+                    ModMemoryModules.ITEM_FRAME_POSITION.get(),
+                    ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(),
                     ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(),
                     ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get());
 
-    private boolean hasCloak = false;
     private boolean isPetrifying;
-    public boolean isPetrified;
     private boolean isAnimating;
-    public boolean isAnimated = true;
     private boolean isReceiving;
     private boolean isGiving;
     private int age;
     public final float bobOffs;
-    private boolean toggleTexture = true;
-    private boolean toggleAnimations = true;
 
     private AnimationFactory factory = new AnimationFactory(this);
 
@@ -99,10 +93,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 .add(Attributes.ARMOR, 2.0D);
     }
 
-    @Override
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
 
     // ========================================= SPAWNING & EXISTENCE =============================================== //
 
@@ -110,12 +100,18 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         super.defineSynchedData();
         this.entityData.define(DATA_FLAGS_ID, (byte)0);
         this.entityData.define(DATA_CLOAK_COLOR, DyeColor.WHITE.getId());
+        this.entityData.define(DATA_IS_PETRIFIED, (byte)0);
+        this.entityData.define(DATA_IS_ANIMATED, (byte)0);
+        this.entityData.define(DATA_HAS_CLOAK, (byte)0);
     }
 
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.put("Inventory", this.inventory.createTag());
         tag.putBoolean("PlayerCreated", this.isPlayerCreated());
+        tag.putBoolean("isPetrified", this.isPetrified());
+        tag.putBoolean("isAnimated", this.isAnimated());
+        tag.putBoolean("hasCloak", this.hasCloak());
         tag.putByte("CloakColor", (byte)this.getCloakColor().getId());
     }
 
@@ -123,6 +119,9 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         super.readAdditionalSaveData(tag);
         this.inventory.fromTag(tag.getList("Inventory", 10));
         this.setPlayerCreated(tag.getBoolean("PlayerCreated"));
+        this.setPetrified(tag.getBoolean("isPetrified"));
+        this.setAnimated(tag.getBoolean("isAnimated"));
+        this.setCloak(tag.getBoolean("hasCloak"));
         if (tag.contains("CloakColor", 99)) {
             this.setCloakColor(DyeColor.byId(tag.getInt("CloakColor")));
         }
@@ -132,9 +131,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor levelAccessor, DifficultyInstance difficulty,
                                         MobSpawnType spawnType, @Nullable SpawnGroupData spawnGroupData, @Nullable CompoundTag tag) {
+        RandomSource randomsource = levelAccessor.getRandom();
+        TuffGolemAi.initMemories(this, randomsource);
         spawnGroupData = super.finalizeSpawn(levelAccessor, difficulty, spawnType, spawnGroupData, tag);
         this.setCanPickUpLoot(true);
-        this.isAnimated = true;
+        this.setAnimated(true);
         return spawnGroupData;
     }
 
@@ -144,6 +145,33 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             this.entityData.set(DATA_FLAGS_ID, (byte)(b0 | 1));
         } else {
             this.entityData.set(DATA_FLAGS_ID, (byte)(b0 & -2));
+        }
+    }
+
+    public void setPetrified(boolean petrified) {
+        byte b0 = this.entityData.get(DATA_IS_PETRIFIED);
+        if (petrified) {
+            this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 & -2));
+        }
+    }
+
+    public void setAnimated(boolean animated) {
+        byte b0 = this.entityData.get(DATA_IS_ANIMATED);
+        if (animated) {
+            this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 & -2));
+        }
+    }
+
+    public void setCloak(boolean hasCloak) {
+        byte b0 = this.entityData.get(DATA_HAS_CLOAK);
+        if (hasCloak) {
+            this.entityData.set(DATA_HAS_CLOAK, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_HAS_CLOAK, (byte)(b0 & -2));
         }
     }
 
@@ -162,18 +190,19 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
-    // ======================================= GETTERS, SETTERS, BOOLEAN ============================================ //
+    // ====================================== GETTERS, SETTERS, CHECKERS ============================================ //
 
     public void cancelAnimate() { this.isAnimating = false; }
     public void cancelPetrify() { this.isPetrifying = false; }
-    public boolean isPetrified() { return this.isPetrified; }
-    public boolean isAnimated() { return this.isAnimated; }
+    public boolean isPetrified() { return (this.entityData.get(DATA_IS_PETRIFIED) & 1) != 0; }
+    public boolean isAnimated() { return (this.entityData.get(DATA_IS_ANIMATED) & 1) != 0; }
     public boolean isAnimating() { return this.isAnimating; }
     public boolean isPetrifying() { return this.isPetrifying; }
-    public boolean hasCloak() { return this.hasCloak; }
+    public boolean hasCloak() { return (this.entityData.get(DATA_HAS_CLOAK) & 1) != 0; }
     public boolean isReceiving() { return this.isReceiving; }
     public boolean isGiving() { return this.isGiving; }
     public boolean canPickUpLoot() { return !this.hasItemInHand(); }
+    public boolean canBreatheUnderwater() { return true; }
     public boolean hasItemInHand() { return !this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty(); }
     public boolean canTakeItem(@NotNull ItemStack stack) { return false; }
     public boolean isPlayerCreated() { return (this.entityData.get(DATA_FLAGS_ID) & 1) != 0; }
@@ -187,28 +216,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     @Override
     public void aiStep() {
         super.aiStep();
-        if (!this.level.isClientSide && this.isPetrified && !this.isAnimating && !this.isPathFinding() && this.onGround) {
-            this.isAnimating = true;
-            this.level.broadcastEntityEvent(this, (byte)8);
-        }
-
-        Vec3i vec3i = this.getPickupReach();
-        if (!this.level.isClientSide && this.canPickUpLoot() && this.isAlive() && !this.dead && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
-            for(ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate((double)vec3i.getX(), (double)vec3i.getY(), (double)vec3i.getZ()))) {
-                if (!itemFrame.isRemoved() && !itemFrame.getItem().isEmpty() && this.wantsToPickUp(itemFrame.getItem())) {
-                    this.pickOutItem(itemFrame);
-                }
-            }
-        }
-    }
-
-    protected void pickOutItem(ItemFrame itemFrame) {
-        ItemStack itemstack = itemFrame.getItem();
-        if (this.equipItemIfPossible(itemstack)) {
-            //this.onItemPickup(itemFrame.getItem());
-            this.setItemInHand(InteractionHand.MAIN_HAND, itemstack);
-            itemFrame.setItem(ItemStack.EMPTY);
-        }
     }
 
     protected Brain.@NotNull Provider<TuffGolemEntity> brainProvider() {
@@ -229,6 +236,21 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         TuffGolemAi.pickUpItem(this, itemOnGround);
     }
 
+    public void pickOutItem() {
+        Vec3i vec3i = this.getPickupReach();
+        if (!this.level.isClientSide && this.canPickUpLoot() && this.isAlive() && !this.dead && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
+            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(vec3i.getX(), vec3i.getY(), vec3i.getZ()))) {
+                if (!itemFrame.isRemoved() && !itemFrame.getItem().isEmpty() && this.wantsToPickUp(itemFrame.getItem())) {
+                    ItemStack itemstack = itemFrame.getItem();
+                    if (this.equipItemIfPossible(itemstack) && this.getBrain().getMemory(ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get()).isPresent()) {
+                        this.setItemInHand(InteractionHand.MAIN_HAND, itemstack);
+                        itemFrame.setItem(ItemStack.EMPTY);
+                    }
+                }
+            }
+        }
+    }
+
     protected void customServerAiStep() {
         this.level.getProfiler().push("tuffGolemBrain");
         this.getBrain().tick((ServerLevel)this.level, this);
@@ -242,17 +264,16 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public void petrify() {
         this.isPetrifying = true;
         this.setSpeed(0.0F);
-        //Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.0);
-        this.isAnimated = false;
-        this.isPetrified = true;
+        setAnimated(false);
+        setPetrified(true);
     }
 
     public void animate() {
         this.isAnimating = true;
         this.setSpeed(0.15F);
-        //Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.15F);
-        this.isPetrified = false;
-        this.isAnimated = true;
+        setPetrified(false);
+        setAnimated(true);
+
     }
 
     protected @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
@@ -270,26 +291,27 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 return InteractionResult.SUCCESS;
             }
         }
-
-        if (specificItemInPlayerHand instanceof BannerItem && player.isCrouching() && !hasCloak) {
+        if (specificItemInPlayerHand instanceof BannerItem banner && player.isCrouching() && !this.hasCloak()) {
+            DyeColor color = banner.getColor();
             player.setItemInHand(hand, Items.STICK.getDefaultInstance());
-            hasCloak = true;
+            this.setCloak(true);
+            this.setCloakColor(color);
         }
 
-        if (itemInPlayerHand.is(Items.STICK) && player.isCrouching() && itemInTuffGolemHand.isEmpty() && hasCloak) {
+        if (itemInPlayerHand.is(Items.STICK) && player.isCrouching() && itemInTuffGolemHand.isEmpty() && this.hasCloak()) {
             player.setItemInHand(hand, Items.WHITE_BANNER.getDefaultInstance());
-            hasCloak = false;
+            this.setCloak(false);
         }
 
         if (itemInPlayerHand.is(Items.TUFF) && player.isCrouching()) {
-            if (this.isAnimated) {
+            if (this.isAnimated()) {
                 petrify();
             } else {
                 animate();
             }
         }
 
-        if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && this.hasCloak) {
+        if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && hasCloak()) {
             isReceiving = true;
             ItemStack playerItemCopy = itemInPlayerHand.copy();
             playerItemCopy.setCount(1);
