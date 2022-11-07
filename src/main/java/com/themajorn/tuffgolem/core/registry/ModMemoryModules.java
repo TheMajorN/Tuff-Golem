@@ -3,6 +3,7 @@ package com.themajorn.tuffgolem.core.registry;
 import com.google.common.annotations.VisibleForTesting;
 import com.mojang.serialization.Codec;
 import com.themajorn.tuffgolem.TuffGolem;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.entity.ai.memory.ExpirableValue;
@@ -24,7 +25,7 @@ public class ModMemoryModules<U> {
     public static final RegistryObject<MemoryModuleType<GlobalPos>> ITEM_FRAME_POSITION = MEMORY_MODULES.register("item_frame_position",
             () -> new MemoryModuleType<>(Optional.empty()));
 
-    public static final RegistryObject<MemoryModuleType<GlobalPos>> SELECTED_ITEM_FRAME_POSITION = MEMORY_MODULES.register("selected_item_frame_position",
+    public static final RegistryObject<MemoryModuleType<BlockPos>> SELECTED_ITEM_FRAME_POSITION = MEMORY_MODULES.register("selected_item_frame_position",
             () -> new MemoryModuleType<>(Optional.empty()));
 
     public static final RegistryObject<MemoryModuleType<Integer>> GO_TO_ITEM_FRAME_COOLDOWN_TICKS = MEMORY_MODULES.register("item_frame_cooldown_ticks",
@@ -33,8 +34,8 @@ public class ModMemoryModules<U> {
     public static final RegistryObject<MemoryModuleType<Integer>> ANIMATE_OR_PETRIFY_COOLDOWN_TICKS = MEMORY_MODULES.register("animate_or_petrify_cooldown_ticks",
             () -> new MemoryModuleType<>(Optional.of(Codec.INT)));
 
-    public static final RegistryObject<MemoryModuleType<UUID>> SELECTED_ITEM_FRAME = MEMORY_MODULES.register("selected_item_frame",
-            () -> new MemoryModuleType<>(Optional.of(UUIDUtil.CODEC)));
+    public static final RegistryObject<MemoryModuleType<ItemFrame>> SELECTED_ITEM_FRAME = MEMORY_MODULES.register("selected_item_frame",
+            () -> new MemoryModuleType<>(Optional.empty()));
 
     public static final RegistryObject<MemoryModuleType<Boolean>> MID_ANIMATE_OR_PETRIFY = MEMORY_MODULES.register("mid_animate_or_petrify",
             () -> new MemoryModuleType<>(Optional.empty()));

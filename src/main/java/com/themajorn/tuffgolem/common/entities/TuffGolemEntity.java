@@ -72,13 +72,14 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                     ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(),
                     ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get());
 
+    private static final Vec3i TUFF_GOLEM_ITEM_PICKUP_REACH = new Vec3i(2, 1, 2);
+
     private boolean isPetrifying;
     private boolean isAnimating;
     private boolean isReceiving;
     private boolean isGiving;
     private int age;
     public final float bobOffs;
-
     private AnimationFactory factory = new AnimationFactory(this);
 
     public TuffGolemEntity(EntityType<? extends AbstractGolem> entityType, Level level) {
@@ -137,6 +138,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.setCanPickUpLoot(true);
         this.setAnimated(true);
         return spawnGroupData;
+    }
+
+    @Override
+    protected Vec3i getPickupReach() {
+        return TUFF_GOLEM_ITEM_PICKUP_REACH;
     }
 
     public void setPlayerCreated(boolean playerCreated) {
@@ -237,14 +243,37 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     public void pickOutItem() {
-        Vec3i vec3i = this.getPickupReach();
-        if (!this.level.isClientSide && this.canPickUpLoot() && this.isAlive() && !this.dead && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
-            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(vec3i.getX(), vec3i.getY(), vec3i.getZ()))) {
-                if (!itemFrame.isRemoved() && !itemFrame.getItem().isEmpty() && this.wantsToPickUp(itemFrame.getItem())) {
+        Vec3i reach = this.getPickupReach();
+        if (!this.level.isClientSide
+                && this.canPickUpLoot()
+                && this.isAlive()
+                && !this.dead
+                && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
+            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(reach.getX(), reach.getY(), reach.getZ()))) {
+                if (!itemFrame.isRemoved() && !itemFrame.getItem().isEmpty() && !this.hasItemInHand()) {
                     ItemStack itemstack = itemFrame.getItem();
-                    if (this.equipItemIfPossible(itemstack) && this.getBrain().getMemory(ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get()).isPresent()) {
+                    if (this.getBrain().getMemory(ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get()).isPresent()) {
                         this.setItemInHand(InteractionHand.MAIN_HAND, itemstack);
                         itemFrame.setItem(ItemStack.EMPTY);
+                    }
+                }
+            }
+        }
+    }
+
+    public void putBackItem() {
+        Vec3i vec3i = this.getPickupReach();
+        if (!this.level.isClientSide
+                && !this.canPickUpLoot()
+                && this.isAlive()
+                && !this.dead
+                && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
+            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(vec3i.getX(), vec3i.getY(), vec3i.getZ()))) {
+                if (!itemFrame.isRemoved() && itemFrame.getItem().isEmpty()) {
+                    ItemStack itemstack = this.getItemInHand(InteractionHand.MAIN_HAND);
+                    if (this.getBrain().getMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get()).isPresent()) {
+                        this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                        itemFrame.setItem(itemstack);
                     }
                 }
             }

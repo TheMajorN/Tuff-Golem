@@ -7,45 +7,45 @@ import com.themajorn.tuffgolem.common.ai.behaviors.*;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import com.themajorn.tuffgolem.core.registry.ModActivities;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
-import net.minecraft.core.GlobalPos;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.*;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.animal.AbstractGolem;
-import net.minecraft.world.entity.animal.allay.AllayAi;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 
 import java.util.Optional;
-import java.util.UUID;
 
 public class TuffGolemAi {
 
     private static final UniformInt TIME_BETWEEN_ANIMATE_OR_PETRIFY = UniformInt.of(600, 1200);
     private static final UniformInt TIME_BETWEEN_GOING_TO_ITEM_FRAME = UniformInt.of(600, 1200);
+    //private static final UniformInt TIME_BETWEEN_PICKING_UP_ITEM = UniformInt.of(600, 1200);
 
     public static void initMemories(TuffGolemEntity tuffGolem, RandomSource random) {
         tuffGolem.getBrain().setMemory(ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(), TIME_BETWEEN_ANIMATE_OR_PETRIFY.sample(random));
         tuffGolem.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), TIME_BETWEEN_GOING_TO_ITEM_FRAME.sample(random));
+        //tuffGolem.getBrain().setMemory(MemoryModuleType.ITEM_PICKUP_COOLDOWN_TICKS, TIME_BETWEEN_PICKING_UP_ITEM.sample(random));
     }
 
     public static Brain<?> makeBrain(Brain<TuffGolemEntity> brain) {
         initCoreActivity(brain);
         initIdleActivity(brain);
         initTakeItemFromFrameActivity(brain);
+        initReturnItemToFrameActivity(brain);
+        //initForgetAboutPreviousItemFrameActivity(brain);
         //initPetrifyOrAnimateActivity(brain);
         brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
         brain.setDefaultActivity(Activity.IDLE);
@@ -66,8 +66,8 @@ public class TuffGolemAi {
         brain.addActivityWithConditions(Activity.IDLE,
                 ImmutableList.of(
                         Pair.of(0, new GoToDroppedItem<>((tuffGolem) -> true, 2.5F, true, 10)),
-                        Pair.of(1, new StayCloseToTarget<>(TuffGolemAi::getItemPlacePosition, 4, 16, 2.25F)),
-                        Pair.of(2, new RunSometimes<>(new SetEntityLookTarget((p_218434_) -> { return true; }, 6.0F), UniformInt.of(30, 60))),
+                        Pair.of(1, new StayCloseToTarget<>(TuffGolemAi::getItemFramePosition, 4, 16, 2.25F)),
+                        Pair.of(2, new RunSometimes<>(new SetEntityLookTarget((entity) -> true, 6.0F), UniformInt.of(30, 60))),
                         Pair.of(3, new RunOne<>(ImmutableList.of(Pair.of(new RandomStroll(1.0F), 2),
                                         Pair.of(new SetWalkTargetFromLookTarget(1.0F, 3), 2),
                                         Pair.of(new DoNothing(30, 60), 1))))),
@@ -77,9 +77,30 @@ public class TuffGolemAi {
     private static void initTakeItemFromFrameActivity(Brain<TuffGolemEntity> brain) {
         brain.addActivityWithConditions(ModActivities.TAKE_ITEM.get(),
                 ImmutableList.of(
-                        Pair.of(0, new GoToItemFrame<>(TIME_BETWEEN_GOING_TO_ITEM_FRAME, (tuffGolem) -> true, 2.5F, true, 25))),
-                ImmutableSet.of(Pair.of(MemoryModuleType.WALK_TARGET, MemoryStatus.VALUE_PRESENT),
+                        Pair.of(0, new GoAndTakeItemFromFrame<>(TIME_BETWEEN_GOING_TO_ITEM_FRAME, (tuffGolem) -> true, 2.5F, true, 25))),
+                ImmutableSet.of(
+                        Pair.of(MemoryModuleType.WALK_TARGET, MemoryStatus.VALUE_PRESENT),
                         Pair.of(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), MemoryStatus.VALUE_ABSENT)));
+    }
+
+    public static void initReturnItemToFrameActivity(Brain<TuffGolemEntity> brain) {
+        brain.addActivityWithConditions(ModActivities.RETURN_ITEM.get(),
+                ImmutableList.of(
+                        Pair.of(0, new GoAndReturnItemToFrame<>(TIME_BETWEEN_GOING_TO_ITEM_FRAME, (tuffGolem) -> true, 2.5F, true, 30))),
+                ImmutableSet.of(
+                        Pair.of(MemoryModuleType.WALK_TARGET, MemoryStatus.VALUE_PRESENT),
+                        Pair.of(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), MemoryStatus.VALUE_ABSENT),
+                        Pair.of(ModMemoryModules.SELECTED_ITEM_FRAME.get(), MemoryStatus.VALUE_PRESENT)
+                ));
+    }
+
+    public static void initForgetAboutPreviousItemFrameActivity(Brain<TuffGolemEntity> brain) {
+        brain.addActivityWithConditions(ModActivities.FORGET.get(),
+                ImmutableList.of(
+                        Pair.of(0, new ForgetAboutItemFrame())),
+                ImmutableSet.of(
+                        Pair.of(ModMemoryModules.SELECTED_ITEM_FRAME.get(), MemoryStatus.VALUE_PRESENT)
+                ));
     }
 
     private static void initPetrifyOrAnimateActivity(Brain<TuffGolemEntity> brain) {
@@ -93,7 +114,12 @@ public class TuffGolemAi {
     }
 
     public static void updateActivity(TuffGolemEntity tuffGolem) {
-        tuffGolem.getBrain().setActiveActivityToFirstValid(ImmutableList.of(ModActivities.TAKE_ITEM.get(), ModActivities.ANIMATE.get(), Activity.IDLE));
+        tuffGolem.getBrain().setActiveActivityToFirstValid(ImmutableList.of(
+                ModActivities.FORGET.get(),
+                ModActivities.RETURN_ITEM.get(),
+                ModActivities.TAKE_ITEM.get(),
+                ModActivities.ANIMATE.get(),
+                Activity.IDLE));
     }
 
     protected static boolean isIdle(AbstractGolem golem) {
@@ -136,45 +162,36 @@ public class TuffGolemAi {
             }
     }
 
-    private static Optional<PositionTracker> getItemPlacePosition(LivingEntity entity) {
+    private static Optional<PositionTracker> getItemFramePosition(LivingEntity entity) {
         Brain<?> brain = entity.getBrain();
-        Optional<GlobalPos> optional = brain.getMemory(ModMemoryModules.SELECTED_ITEM_FRAME_POSITION.get());
-        if (optional.isPresent()) {
-            GlobalPos globalpos = optional.get();
-            if (shouldDepositItemAtSelectedFrame(entity, brain, globalpos)) {
-                return Optional.of(new BlockPosTracker(globalpos.pos().above()));
+        Optional<BlockPos> positionOptional = brain.getMemory(ModMemoryModules.SELECTED_ITEM_FRAME_POSITION.get());
+        Optional<ItemFrame> itemFrameOptional = brain.getMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get());
+        if (positionOptional.isPresent() && itemFrameOptional.isPresent()) {
+            BlockPos pos = positionOptional.get();
+            if (shouldReturnItem(entity, brain, pos)) {
+                return Optional.of(new BlockPosTracker(pos));
             }
-
             brain.eraseMemory(ModMemoryModules.SELECTED_ITEM_FRAME_POSITION.get());
         }
-
         return getItemFramePositionTracker(entity);
     }
 
     private static Optional<PositionTracker> getItemFramePositionTracker(LivingEntity entity) {
-        return getSelectedItemFrame(entity).map((frame) -> {
-            return new EntityTracker(frame, true);
-        });
+        return getSelectedItemFrame(entity).map((itemFrame) -> new EntityTracker(itemFrame, true));
     }
 
     public static Optional<ItemFrame> getSelectedItemFrame(LivingEntity livingEntity) {
         Level level = livingEntity.getLevel();
-        if (!level.isClientSide() && level instanceof ServerLevel serverlevel) {
-            Optional<UUID> optional = livingEntity.getBrain().getMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get());
-            if (optional.isPresent()) {
-                Entity entity = serverlevel.getEntity(optional.get());
-                if (entity instanceof ItemFrame itemFrame) {
-                    return Optional.of(itemFrame);
-                }
-                return Optional.empty();
-            }
+        if (!level.isClientSide() && level instanceof ServerLevel) {
+            Optional<ItemFrame> optional = livingEntity.getBrain().getMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get());
+            return optional;
         }
         return Optional.empty();
     }
 
-    private static boolean shouldDepositItemAtSelectedFrame(LivingEntity entity, Brain<?> brain, GlobalPos globalPos) {
+    private static boolean shouldReturnItem(LivingEntity entity, Brain<?> brain, BlockPos pos) {
         Optional<Integer> optional = brain.getMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get());
         Level level = entity.getLevel();
-        return level.dimension() == globalPos.dimension() && optional.isPresent();
+        return level.dimension() == entity.getLevel().dimension() && !optional.isPresent();
     }
 }

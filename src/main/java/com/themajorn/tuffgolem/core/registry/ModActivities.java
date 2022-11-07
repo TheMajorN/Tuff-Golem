@@ -17,4 +17,10 @@ public class ModActivities {
     public static final RegistryObject<Activity> TAKE_ITEM = ACTIVITIES.register("take_item",
             () -> new Activity("take_item"));
 
+    public static final RegistryObject<Activity> RETURN_ITEM = ACTIVITIES.register("return_item",
+            () -> new Activity("return_item"));
+
+    public static final RegistryObject<Activity> FORGET = ACTIVITIES.register("forget",
+            () -> new Activity("forget"));
+
 }

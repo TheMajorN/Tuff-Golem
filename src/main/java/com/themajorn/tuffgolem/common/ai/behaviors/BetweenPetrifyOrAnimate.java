@@ -16,7 +16,8 @@ public class BetweenPetrifyOrAnimate extends Behavior<TuffGolemEntity> {
     private SoundEvent petrifySound;
 
     public BetweenPetrifyOrAnimate(UniformInt betweenPetrify, SoundEvent soundEvent) {
-        super(ImmutableMap.of(MemoryModuleType.LOOK_TARGET, MemoryStatus.REGISTERED, MemoryModuleType.LONG_JUMP_MID_JUMP, MemoryStatus.VALUE_PRESENT), 100);
+        super(ImmutableMap.of(MemoryModuleType.LOOK_TARGET, MemoryStatus.REGISTERED,
+                ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get(), MemoryStatus.VALUE_PRESENT), 100);
         this.timeBetweenAnimateAndPetrify = betweenPetrify;
         this.petrifySound = soundEvent;
     }
