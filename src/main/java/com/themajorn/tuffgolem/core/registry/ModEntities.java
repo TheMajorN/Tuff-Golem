@@ -13,7 +13,7 @@ public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, TuffGolem.MOD_ID);
 
     public static final RegistryObject<EntityType<TuffGolemEntity>> TUFF_GOLEM = ENTITIES.register("tuff_golem",
-            () -> EntityType.Builder.of(TuffGolemEntity::new, MobCategory.CREATURE)
-                    .sized(1.0F, 1.0F)
+            () -> EntityType.Builder.of(TuffGolemEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 1.3F)
                     .build(new ResourceLocation(TuffGolem.MOD_ID, "tuff_golem").toString()));
 }

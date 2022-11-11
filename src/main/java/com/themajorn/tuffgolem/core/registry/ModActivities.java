@@ -11,7 +11,7 @@ public class ModActivities {
     public static final DeferredRegister<Activity> ACTIVITIES = DeferredRegister.create(ForgeRegistries.ACTIVITIES, TuffGolem.MOD_ID);
 
 
-    public static final RegistryObject<Activity> ANIMATE = ACTIVITIES.register("animate",
+    public static final RegistryObject<Activity> ANIMATE_PETRIFY = ACTIVITIES.register("animate",
             () -> new Activity("animate"));
 
     public static final RegistryObject<Activity> TAKE_ITEM = ACTIVITIES.register("take_item",

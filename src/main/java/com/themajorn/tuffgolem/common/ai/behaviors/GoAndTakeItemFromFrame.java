@@ -40,22 +40,24 @@ public class GoAndTakeItemFromFrame<E extends LivingEntity> extends Behavior<Tuf
                 && !entity.hasItemInHand()
                 && !entity.isPetrified();
         if (!validStartConditions) {
-            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random));
+            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 2);
         }
         return validStartConditions;
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
         BehaviorUtils.setWalkAndLookTargetMemories(entity, this.getClosestItemFrame(entity), this.speedModifier, 0);
+        if (entity.getBrain().checkMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), MemoryStatus.VALUE_ABSENT)) {
+            entity.getBrain().setMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), getClosestItemFrame(entity));
+        }
         TuffGolem.LOGGER.info("Picking out item!");
         entity.pickOutItem();
-        entity.getBrain().setMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), getClosestItemFrame(entity));
     }
 
     protected boolean canStillUse(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
-        boolean validContinueConditions = !getClosestItemFrame(entity).getItem().isEmpty() && !entity.isPetrified() && !entity.hasItemInHand();
+        boolean validContinueConditions = !getClosestItemFrame(entity).getItem().isEmpty() && !entity.isPetrified();
         if (!validContinueConditions) {
-            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random));
+            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 2);
         }
         return validContinueConditions;
     }

@@ -3,9 +3,11 @@ package com.themajorn.tuffgolem.core.registry;
 import com.google.common.annotations.VisibleForTesting;
 import com.mojang.serialization.Codec;
 import com.themajorn.tuffgolem.TuffGolem;
+import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.ai.memory.ExpirableValue;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.decoration.ItemFrame;
@@ -42,6 +44,10 @@ public class ModMemoryModules<U> {
 
     public static final RegistryObject<MemoryModuleType<ItemFrame>> NEAREST_VISIBLE_ITEM_FRAME = MEMORY_MODULES.register("nearest_visible_item_frame",
             () -> new MemoryModuleType<>(Optional.empty()));
+
+    public static final RegistryObject<MemoryModuleType<TuffGolemEntity>> STACK_TARGET = MEMORY_MODULES.register("stack_target",
+            () -> new MemoryModuleType<>(Optional.empty()));
+
 
     private final Optional<Codec<ExpirableValue<U>>> codec;
 

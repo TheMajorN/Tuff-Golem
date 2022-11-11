@@ -6,6 +6,7 @@ import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import com.themajorn.tuffgolem.core.registry.ModSensors;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -45,12 +46,20 @@ import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 
+import java.util.Objects;
+import java.util.UUID;
+
 public class TuffGolemEntity extends AbstractGolem implements IAnimatable, InventoryCarrier {
-    protected static final EntityDataAccessor<Byte> DATA_FLAGS_ID = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+
     private static final EntityDataAccessor<Integer> DATA_CLOAK_COLOR = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_STACK_SIZE = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.INT);
+    protected static final EntityDataAccessor<Byte> DATA_FLAGS_ID = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_PETRIFIED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_IS_PETRIFYING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_ANIMATED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_IS_ANIMATING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_HAS_CLOAK = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+
     private final SimpleContainer inventory = new SimpleContainer(1);
 
     protected static final ImmutableList<SensorType<? extends Sensor<? super TuffGolemEntity>>> SENSOR_TYPES =
@@ -58,7 +67,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                             SensorType.NEAREST_PLAYERS,
                             SensorType.HURT_BY,
                             SensorType.NEAREST_ITEMS,
-                            ModSensors.NEAREST_ITEM_FRAMES.get());
+                            ModSensors.NEAREST_ITEM_FRAMES.get(),
+                            ModSensors.TUFF_GOLEM_TEMPTATIONS.get());
 
     protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES =
             ImmutableList.of(MemoryModuleType.PATH,
@@ -70,15 +80,20 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                     ModMemoryModules.ITEM_FRAME_POSITION.get(),
                     ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(),
                     ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(),
-                    ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get());
+                    ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get(),
+                    MemoryModuleType.TEMPTING_PLAYER,
+                    MemoryModuleType.TEMPTATION_COOLDOWN_TICKS,
+                    MemoryModuleType.IS_TEMPTED,
+                    ModMemoryModules.STACK_TARGET.get());
 
     private static final Vec3i TUFF_GOLEM_ITEM_PICKUP_REACH = new Vec3i(2, 1, 2);
 
-    private boolean isPetrifying;
-    private boolean isAnimating;
     private boolean isReceiving;
     private boolean isGiving;
     private int age;
+    private int wantsToStack;
+    @javax.annotation.Nullable
+    private UUID stackCause;
     public final float bobOffs;
     private AnimationFactory factory = new AnimationFactory(this);
 
@@ -99,11 +114,14 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(DATA_FLAGS_ID, (byte)0);
+        this.entityData.define(DATA_FLAGS_ID, (byte) 0);
         this.entityData.define(DATA_CLOAK_COLOR, DyeColor.WHITE.getId());
-        this.entityData.define(DATA_IS_PETRIFIED, (byte)0);
-        this.entityData.define(DATA_IS_ANIMATED, (byte)0);
-        this.entityData.define(DATA_HAS_CLOAK, (byte)0);
+        this.entityData.define(DATA_STACK_SIZE, 1);
+        this.entityData.define(DATA_IS_PETRIFIED, (byte) 0);
+        this.entityData.define(DATA_IS_PETRIFYING, (byte) 0);
+        this.entityData.define(DATA_IS_ANIMATED, (byte) 0);
+        this.entityData.define(DATA_IS_ANIMATING, (byte) 0);
+        this.entityData.define(DATA_HAS_CLOAK, (byte)0 );
     }
 
     public void addAdditionalSaveData(CompoundTag tag) {
@@ -111,9 +129,16 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         tag.put("Inventory", this.inventory.createTag());
         tag.putBoolean("PlayerCreated", this.isPlayerCreated());
         tag.putBoolean("isPetrified", this.isPetrified());
+        tag.putBoolean("isPetrifying", this.isPetrifying());
         tag.putBoolean("isAnimated", this.isAnimated());
+        tag.putBoolean("isAnimating", this.isAnimating());
         tag.putBoolean("hasCloak", this.hasCloak());
-        tag.putByte("CloakColor", (byte)this.getCloakColor().getId());
+        tag.putByte("CloakColor", (byte) this.getCloakColor().getId());
+        tag.putByte("stackSize", (byte) this.getStackSize());
+        tag.putInt("wantsToStack", this.wantsToStack);
+        if (this.stackCause != null) {
+            tag.putUUID("stackCause", this.stackCause);
+        }
     }
 
     public void readAdditionalSaveData(CompoundTag tag) {
@@ -121,11 +146,16 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.inventory.fromTag(tag.getList("Inventory", 10));
         this.setPlayerCreated(tag.getBoolean("PlayerCreated"));
         this.setPetrified(tag.getBoolean("isPetrified"));
+        this.setPetrifying(tag.getBoolean("isPetrifying"));
         this.setAnimated(tag.getBoolean("isAnimated"));
+        this.setAnimating(tag.getBoolean("isAnimating"));
         this.setCloak(tag.getBoolean("hasCloak"));
         if (tag.contains("CloakColor", 99)) {
             this.setCloakColor(DyeColor.byId(tag.getInt("CloakColor")));
         }
+        this.setStackSize(tag.getInt("stackSize"));
+        this.wantsToStack = tag.getInt("wantsToStack");
+        this.stackCause = tag.hasUUID("stackCause") ? tag.getUUID("stackCause") : null;
     }
 
     @Nullable
@@ -137,12 +167,10 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         spawnGroupData = super.finalizeSpawn(levelAccessor, difficulty, spawnType, spawnGroupData, tag);
         this.setCanPickUpLoot(true);
         this.setAnimated(true);
+        this.setAnimating(false);
+        this.setPetrified(false);
+        this.setPetrifying(false);
         return spawnGroupData;
-    }
-
-    @Override
-    protected Vec3i getPickupReach() {
-        return TUFF_GOLEM_ITEM_PICKUP_REACH;
     }
 
     public void setPlayerCreated(boolean playerCreated) {
@@ -163,12 +191,30 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
+    public void setPetrifying(boolean petrifying) {
+        byte b0 = this.entityData.get(DATA_IS_PETRIFYING);
+        if (petrifying) {
+            this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 & -2));
+        }
+    }
+
     public void setAnimated(boolean animated) {
         byte b0 = this.entityData.get(DATA_IS_ANIMATED);
         if (animated) {
             this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 | 1));
         } else {
             this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 & -2));
+        }
+    }
+
+    public void setAnimating(boolean animating) {
+        byte b0 = this.entityData.get(DATA_IS_ANIMATING);
+        if (animating) {
+            this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 & -2));
         }
     }
 
@@ -194,16 +240,17 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 this.age = 1;
             }
         }
+        if (isPassenger()) {
+            this.setYRot(this.getVehicle().getYRot());
+        }
     }
 
     // ====================================== GETTERS, SETTERS, CHECKERS ============================================ //
 
-    public void cancelAnimate() { this.isAnimating = false; }
-    public void cancelPetrify() { this.isPetrifying = false; }
     public boolean isPetrified() { return (this.entityData.get(DATA_IS_PETRIFIED) & 1) != 0; }
+    public boolean isPetrifying() { return (this.entityData.get(DATA_IS_PETRIFYING) & 1) != 0; }
     public boolean isAnimated() { return (this.entityData.get(DATA_IS_ANIMATED) & 1) != 0; }
-    public boolean isAnimating() { return this.isAnimating; }
-    public boolean isPetrifying() { return this.isPetrifying; }
+    public boolean isAnimating() { return (this.entityData.get(DATA_IS_ANIMATING) & 1) != 0; }
     public boolean hasCloak() { return (this.entityData.get(DATA_HAS_CLOAK) & 1) != 0; }
     public boolean isReceiving() { return this.isReceiving; }
     public boolean isGiving() { return this.isGiving; }
@@ -214,6 +261,9 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public boolean isPlayerCreated() { return (this.entityData.get(DATA_FLAGS_ID) & 1) != 0; }
     public DyeColor getCloakColor() { return DyeColor.byId(this.entityData.get(DATA_CLOAK_COLOR)); }
     public void setCloakColor(DyeColor dyeColor) { this.entityData.set(DATA_CLOAK_COLOR, dyeColor.getId()); }
+    public int getStackSize() { return this.entityData.get(DATA_STACK_SIZE); }
+    public void setStackSize(int size) { this.entityData.set(DATA_STACK_SIZE, size); }
+    protected Vec3i getPickupReach() { return TUFF_GOLEM_ITEM_PICKUP_REACH; }
     public int getAge() { return this.age; }
     public float getSpin(float i) { return ((float)this.getAge() + i) / 20.0F + this.bobOffs; }
 
@@ -222,6 +272,19 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     @Override
     public void aiStep() {
         super.aiStep();
+        if (this.getAge() != 0) {
+            this.wantsToStack = 0;
+        }
+
+        if (this.wantsToStack > 0) {
+            --this.wantsToStack;
+            if (this.wantsToStack % 10 == 0) {
+                double d0 = this.random.nextGaussian() * 0.02D;
+                double d1 = this.random.nextGaussian() * 0.02D;
+                double d2 = this.random.nextGaussian() * 0.02D;
+                this.level.addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
+            }
+        }
     }
 
     protected Brain.@NotNull Provider<TuffGolemEntity> brainProvider() {
@@ -235,6 +298,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public @NotNull Brain<TuffGolemEntity> getBrain() {
         return (Brain<TuffGolemEntity>)super.getBrain();
     }
+
 
     @Override
     protected void pickUpItem(ItemEntity itemOnGround) {
@@ -287,28 +351,82 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.level.getProfiler().push("tuffGolemActivityUpdate");
         TuffGolemAi.updateActivity(this);
         this.level.getProfiler().pop();
+        if (this.getAge() != 0) {
+            this.wantsToStack = 0;
+        }
         super.customServerAiStep();
     }
 
     public void petrify() {
-        this.isPetrifying = true;
-        this.setSpeed(0.0F);
+        //setPetrifying(true);
+        Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.0F);
         setAnimated(false);
         setPetrified(true);
     }
 
     public void animate() {
-        this.isAnimating = true;
-        this.setSpeed(0.15F);
+        setAnimating(true);
+        Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.15F);
         setPetrified(false);
         setAnimated(true);
 
+    }
+
+    protected void usePlayerItem(Player player, InteractionHand hand, ItemStack itemStack) {
+        if (!player.getAbilities().instabuild) {
+            itemStack.shrink(1);
+        }
+    }
+
+    public boolean canStack() {
+        return this.wantsToStack <= 0;
+    }
+
+    public void setWantsToStack(@javax.annotation.Nullable Player player) {
+        this.wantsToStack = 600;
+        if (player != null) {
+            this.stackCause = player.getUUID();
+        }
+        this.level.broadcastEntityEvent(this, (byte)18);
+    }
+
+    public void setWantsToStackTime(int time) {
+        this.wantsToStack = time;
+    }
+
+    public boolean wantsToStack() {
+        return this.wantsToStack > 0;
     }
 
     protected @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
         ItemStack itemInPlayerHand = player.getItemInHand(hand);
         ItemStack itemInTuffGolemHand = this.getItemInHand(InteractionHand.MAIN_HAND);
         Item specificItemInPlayerHand = itemInPlayerHand.getItem();
+
+        if (itemInPlayerHand.is(Items.COPPER_INGOT)) {
+            if (!this.level.isClientSide && this.canStack()) {
+                this.usePlayerItem(player, hand, itemInPlayerHand);
+                this.setWantsToStackTime(600);
+                this.setWantsToStack(player);
+                return InteractionResult.SUCCESS;
+            }
+
+            if (this.level.isClientSide) {
+                return InteractionResult.CONSUME;
+            }
+        }
+
+        if (itemInPlayerHand.is(Items.COPPER_INGOT) && this.isPassenger()) {
+            if (!this.level.isClientSide && this.canStack()) {
+                this.usePlayerItem(player, hand, itemInPlayerHand);
+                this.dismountTo(this.getX(), this.getY(), this.getZ());
+                return InteractionResult.SUCCESS;
+            }
+
+            if (this.level.isClientSide) {
+                return InteractionResult.CONSUME;
+            }
+        }
 
         if (specificItemInPlayerHand instanceof DyeItem && player.isCrouching()) {
             DyeColor dyecolor = ((DyeItem)specificItemInPlayerHand).getDyeColor();
@@ -327,8 +445,13 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             this.setCloakColor(color);
         }
 
-        if (itemInPlayerHand.is(Items.STICK) && player.isCrouching() && itemInTuffGolemHand.isEmpty() && this.hasCloak()) {
-            player.setItemInHand(hand, Items.WHITE_BANNER.getDefaultInstance());
+        if (itemInPlayerHand.is(Items.STICK)
+                || itemInPlayerHand.is(itemInTuffGolemHand.getItem())
+                && player.isCrouching()
+                && itemInTuffGolemHand.isEmpty()
+                && this.hasCloak()) {
+            DyeColor color = getCloakColor();
+            player.setItemInHand(hand, BannerItem.byId(color.getId()).getDefaultInstance());
             this.setCloak(false);
         }
 
@@ -346,12 +469,12 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             playerItemCopy.setCount(1);
             this.setItemInHand(InteractionHand.MAIN_HAND, playerItemCopy);
             this.removeInteractionItem(player, itemInPlayerHand);
-            this.level.playSound(player, this, SoundEvents.ANVIL_PLACE, SoundSource.NEUTRAL, 2.0F, 1.0F);
+            this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
             return InteractionResult.SUCCESS;
         } else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
             isGiving = true;
             this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-            this.level.playSound(player, this, SoundEvents.ANVIL_STEP, SoundSource.NEUTRAL, 2.0F, 1.0F);
+            this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
             this.swing(InteractionHand.MAIN_HAND);
 
             for(ItemStack itemClearStack : this.getInventory().removeAllItems()) {
@@ -384,19 +507,19 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     private <E extends IAnimatable> PlayState petrifyPredicate(AnimationEvent<E> event) {
-        if (this.isPetrifying && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
+        if (this.isPetrifying() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.petrify", false));
-            isPetrifying = false;
+            setPetrifying(false);
         }
         return PlayState.CONTINUE;
     }
 
     private <E extends IAnimatable> PlayState animatePredicate(AnimationEvent<E> event) {
-        if (this.isAnimating && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
+        if (this.isAnimating() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.animate", false));
-            isAnimating = false;
+            setAnimating(false);
         }
         return PlayState.CONTINUE;
     }
