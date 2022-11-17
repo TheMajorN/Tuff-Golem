@@ -48,7 +48,6 @@ public class GoAndReturnItemToFrame<E extends LivingEntity> extends Behavior<Tuf
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
         BehaviorUtils.setWalkAndLookTargetMemories(entity, this.getSelectedItemFrame(entity), this.speedModifier, 1);
-        TuffGolem.LOGGER.info("Returning item frame!");
         entity.putBackItem();
     }
 

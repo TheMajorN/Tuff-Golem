@@ -46,11 +46,10 @@ public class GoAndTakeItemFromFrame<E extends LivingEntity> extends Behavior<Tuf
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
-        BehaviorUtils.setWalkAndLookTargetMemories(entity, this.getClosestItemFrame(entity), this.speedModifier, 0);
+        BehaviorUtils.setWalkAndLookTargetMemories(entity, this.getClosestItemFrame(entity), this.speedModifier, 1);
         if (entity.getBrain().checkMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), MemoryStatus.VALUE_ABSENT)) {
             entity.getBrain().setMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), getClosestItemFrame(entity));
         }
-        TuffGolem.LOGGER.info("Picking out item!");
         entity.pickOutItem();
     }
 

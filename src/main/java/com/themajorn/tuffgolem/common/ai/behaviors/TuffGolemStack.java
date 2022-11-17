@@ -61,7 +61,7 @@ public class TuffGolemStack extends Behavior<TuffGolemEntity> {
         BehaviorUtils.lockGazeAndWalkToEachOther(tuffGolem, stackTarget, this.speedModifier);
         if (tuffGolem.closerThan(stackTarget, 2.0D)) {
             if (l >= this.stackAtTime) {
-                tuffGolem.moveTo(stackTarget.getX(), stackTarget.getY(), stackTarget.getZ(), stackTarget.getYRot(), 0.0F);
+                //tuffGolem.moveTo(stackTarget.getX(), stackTarget.getY(), stackTarget.getZ(), stackTarget.getYRot(), 0.0F);
                 tuffGolem.startRiding(stackTarget);
                 tuffGolem.setYRot(stackTarget.getYRot());
                 tuffGolem.getBrain().eraseMemory(ModMemoryModules.STACK_TARGET.get());
@@ -74,6 +74,7 @@ public class TuffGolemStack extends Behavior<TuffGolemEntity> {
         tuffGolem.getBrain().eraseMemory(ModMemoryModules.STACK_TARGET.get());
         tuffGolem.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
         tuffGolem.getBrain().eraseMemory(MemoryModuleType.LOOK_TARGET);
+        tuffGolem.resetWantsToStack();
         this.stackAtTime = 0L;
     }
 

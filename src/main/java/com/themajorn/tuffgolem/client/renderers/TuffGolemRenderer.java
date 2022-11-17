@@ -92,8 +92,8 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     @Override
     protected void preRenderItem(PoseStack matrixStack, ItemStack item, String boneName, TuffGolemEntity currentEntity, IBone bone) {
         if (item == this.mainHand) {
-            matrixStack.translate(0.0, 0.18, -0.6);
-            matrixStack.scale(0.7F, 0.7F, 0.7F);
+            matrixStack.translate(0.0, 0.22, -0.6);
+            matrixStack.scale(0.6F, 0.6F, 0.6F);
             float f3 = currentEntity.getSpin(1.0F);
             matrixStack.mulPose(Vector3f.YP.rotation(f3));
             Minecraft.getInstance().getItemRenderer()

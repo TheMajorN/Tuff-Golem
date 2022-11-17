@@ -3,6 +3,7 @@ package com.themajorn.tuffgolem.common.entities;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Dynamic;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
+import com.themajorn.tuffgolem.core.registry.ModEntities;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import com.themajorn.tuffgolem.core.registry.ModSensors;
 import net.minecraft.core.Vec3i;
@@ -19,6 +20,7 @@ import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -28,6 +30,7 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.animal.*;
+import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.InventoryCarrier;
@@ -35,6 +38,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.AnimationState;
@@ -165,7 +170,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         RandomSource randomsource = levelAccessor.getRandom();
         TuffGolemAi.initMemories(this, randomsource);
         spawnGroupData = super.finalizeSpawn(levelAccessor, difficulty, spawnType, spawnGroupData, tag);
-        this.setCanPickUpLoot(true);
+        this.setCanPickUpLoot(false);
         this.setAnimated(true);
         this.setAnimating(false);
         this.setPetrified(false);
@@ -240,8 +245,33 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 this.age = 1;
             }
         }
-        if (isPassenger()) {
+        if (isStacked()) {
             this.setYRot(this.getVehicle().getYRot());
+            if (getTuffGolemBelow().isPetrified()) {
+                this.setAnimated(false);
+                this.setPetrified(true);
+            } else {
+                this.setPetrified(false);
+                this.setAnimated(true);
+            }
+        }
+
+        if (this.isPetrified()) {
+            this.moveTo(this.getX(), this.getY(), this.getZ());
+            if (this.getYRot() >= 0 && this.getYRot() < 90) {
+                this.setYRot(0.0F);
+            }
+            else if (this.getYRot() >= 90 && this.getYRot() < 179) {
+                this.setYRot(90.0F);
+            }
+            else if (this.getYRot() <= -1 && this.getYRot() > -90) {
+                this.setYRot(-0.1F);
+            }
+            else if (this.getYRot() <= -90 && this.getYRot() > -179) {
+                this.setYRot(-90.0F);
+            } else {
+                this.setYRot(0.0F);
+            }
         }
     }
 
@@ -254,7 +284,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public boolean hasCloak() { return (this.entityData.get(DATA_HAS_CLOAK) & 1) != 0; }
     public boolean isReceiving() { return this.isReceiving; }
     public boolean isGiving() { return this.isGiving; }
-    public boolean canPickUpLoot() { return !this.hasItemInHand(); }
+    public boolean canPickUpLoot() { return !this.hasItemInHand() && this.hasCloak(); }
     public boolean canBreatheUnderwater() { return true; }
     public boolean hasItemInHand() { return !this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty(); }
     public boolean canTakeItem(@NotNull ItemStack stack) { return false; }
@@ -263,7 +293,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public void setCloakColor(DyeColor dyeColor) { this.entityData.set(DATA_CLOAK_COLOR, dyeColor.getId()); }
     public int getStackSize() { return this.entityData.get(DATA_STACK_SIZE); }
     public void setStackSize(int size) { this.entityData.set(DATA_STACK_SIZE, size); }
-    protected Vec3i getPickupReach() { return TUFF_GOLEM_ITEM_PICKUP_REACH; }
+    public @NotNull Vec3i getPickupReach() { return TUFF_GOLEM_ITEM_PICKUP_REACH; }
     public int getAge() { return this.age; }
     public float getSpin(float i) { return ((float)this.getAge() + i) / 20.0F + this.bobOffs; }
 
@@ -282,7 +312,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 double d0 = this.random.nextGaussian() * 0.02D;
                 double d1 = this.random.nextGaussian() * 0.02D;
                 double d2 = this.random.nextGaussian() * 0.02D;
-                this.level.addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
+                this.level.addParticle(ParticleTypes.POOF, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
             }
         }
     }
@@ -299,12 +329,13 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         return (Brain<TuffGolemEntity>)super.getBrain();
     }
 
-
     @Override
     protected void pickUpItem(ItemEntity itemOnGround) {
         this.onItemPickup(itemOnGround);
         TuffGolemAi.pickUpItem(this, itemOnGround);
     }
+
+
 
     public void pickOutItem() {
         Vec3i reach = this.getPickupReach();
@@ -323,6 +354,14 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 }
             }
         }
+    }
+
+    public boolean isStacked() {
+        return this.isPassenger() && this.getVehicle() instanceof TuffGolemEntity;
+    }
+
+    public TuffGolemEntity getTuffGolemBelow() {
+        return (TuffGolemEntity) this.getVehicle();
     }
 
     public void putBackItem() {
@@ -351,9 +390,9 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.level.getProfiler().push("tuffGolemActivityUpdate");
         TuffGolemAi.updateActivity(this);
         this.level.getProfiler().pop();
-        if (this.getAge() != 0) {
-            this.wantsToStack = 0;
-        }
+        //if (this.getAge() != 0) {
+        //    this.wantsToStack = 0;
+        //}
         super.customServerAiStep();
     }
 
@@ -378,9 +417,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
-    public boolean canStack() {
-        return this.wantsToStack <= 0;
-    }
+    public boolean canStack() { return this.wantsToStack <= 0; }
 
     public void setWantsToStack(@javax.annotation.Nullable Player player) {
         this.wantsToStack = 600;
@@ -390,12 +427,16 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.level.broadcastEntityEvent(this, (byte)18);
     }
 
-    public void setWantsToStackTime(int time) {
-        this.wantsToStack = time;
+    public void setWantsToStackTime(int time) { this.wantsToStack = time; }
+
+    public int getWantsToStackTime() {
+        return this.wantsToStack;
     }
 
-    public boolean wantsToStack() {
-        return this.wantsToStack > 0;
+    public boolean wantsToStack() { return this.wantsToStack > 0; }
+
+    public void resetWantsToStack() {
+        this.wantsToStack = 0;
     }
 
     protected @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
@@ -403,32 +444,27 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         ItemStack itemInTuffGolemHand = this.getItemInHand(InteractionHand.MAIN_HAND);
         Item specificItemInPlayerHand = itemInPlayerHand.getItem();
 
+        // STACK AND UNSTACK
         if (itemInPlayerHand.is(Items.COPPER_INGOT)) {
-            if (!this.level.isClientSide && this.canStack()) {
+            if (!this.level.isClientSide && this.canStack() && !this.isPassenger()) {
                 this.usePlayerItem(player, hand, itemInPlayerHand);
-                this.setWantsToStackTime(600);
                 this.setWantsToStack(player);
                 return InteractionResult.SUCCESS;
             }
-
-            if (this.level.isClientSide) {
-                return InteractionResult.CONSUME;
-            }
-        }
-
-        if (itemInPlayerHand.is(Items.COPPER_INGOT) && this.isPassenger()) {
-            if (!this.level.isClientSide && this.canStack()) {
-                this.usePlayerItem(player, hand, itemInPlayerHand);
-                this.dismountTo(this.getX(), this.getY(), this.getZ());
+            else if (!this.level.isClientSide && this.isPassenger()) {
+                this.stopRiding();
+                this.dismountTo(this.getX() + 1, this.getY(), this.getZ() + 1);
+                if (this.isPetrified()) {
+                    animate();
+                }
                 return InteractionResult.SUCCESS;
-            }
-
-            if (this.level.isClientSide) {
-                return InteractionResult.CONSUME;
+            } else {
+                return InteractionResult.FAIL;
             }
         }
 
-        if (specificItemInPlayerHand instanceof DyeItem && player.isCrouching()) {
+        // CHANGE COLOR OF CLOAK
+        else if (specificItemInPlayerHand instanceof DyeItem && player.isCrouching()) {
             DyeColor dyecolor = ((DyeItem)specificItemInPlayerHand).getDyeColor();
             if (dyecolor != this.getCloakColor()) {
                 this.setCloakColor(dyecolor);
@@ -436,16 +472,24 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                     itemInPlayerHand.shrink(1);
                 }
                 return InteractionResult.SUCCESS;
+            } else {
+                return InteractionResult.FAIL;
             }
         }
-        if (specificItemInPlayerHand instanceof BannerItem banner && player.isCrouching() && !this.hasCloak()) {
+
+        // ADD CLOAK
+        else if (specificItemInPlayerHand instanceof BannerItem banner && !this.hasCloak()) {
             DyeColor color = banner.getColor();
-            player.setItemInHand(hand, Items.STICK.getDefaultInstance());
+            if (!player.getAbilities().instabuild) {
+                player.setItemInHand(hand, Items.STICK.getDefaultInstance());
+            }
             this.setCloak(true);
             this.setCloakColor(color);
+            return InteractionResult.SUCCESS;
         }
 
-        if (itemInPlayerHand.is(Items.STICK)
+        // REMOVE CLOAK
+        else if (itemInPlayerHand.is(Items.STICK)
                 || itemInPlayerHand.is(itemInTuffGolemHand.getItem())
                 && player.isCrouching()
                 && itemInTuffGolemHand.isEmpty()
@@ -453,17 +497,21 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             DyeColor color = getCloakColor();
             player.setItemInHand(hand, BannerItem.byId(color.getId()).getDefaultInstance());
             this.setCloak(false);
+            return InteractionResult.SUCCESS;
         }
 
-        if (itemInPlayerHand.is(Items.TUFF) && player.isCrouching()) {
+        // ANIMATE AND PETRIFY
+        else if (itemInPlayerHand.is(Items.TUFF) && player.isCrouching()) {
             if (this.isAnimated()) {
                 petrify();
             } else {
                 animate();
             }
+            return InteractionResult.SUCCESS;
         }
 
-        if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && hasCloak()) {
+        // GIVE ITEM
+        else if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && hasCloak()) {
             isReceiving = true;
             ItemStack playerItemCopy = itemInPlayerHand.copy();
             playerItemCopy.setCount(1);
@@ -471,7 +519,10 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             this.removeInteractionItem(player, itemInPlayerHand);
             this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
             return InteractionResult.SUCCESS;
-        } else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
+        }
+
+        // TAKE ITEM
+        else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
             isGiving = true;
             this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
             this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
@@ -487,6 +538,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             return super.mobInteract(player, hand);
         }
     }
+
+
 
     private void removeInteractionItem(Player player, ItemStack stack) {
         if (!player.getAbilities().instabuild) {
