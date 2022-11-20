@@ -20,7 +20,7 @@ public class PetrifiedTime extends Behavior<TuffGolemEntity> {
     }
 
     protected boolean canStillUse(ServerLevel serverLevel, TuffGolemEntity mob, long l) {
-        return mob.isOnGround() && !mob.isInWater() && !mob.isInLava();
+        return mob.isOnGround() && !mob.isInWater() && !mob.isInLava() && !mob.cannotPetrify();
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity mob, long l) {

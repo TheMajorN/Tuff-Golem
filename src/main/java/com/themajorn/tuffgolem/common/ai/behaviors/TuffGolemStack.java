@@ -1,6 +1,7 @@
 package com.themajorn.tuffgolem.common.ai.behaviors;
 
 import com.google.common.collect.ImmutableMap;
+import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import net.minecraft.server.level.ServerLevel;
@@ -35,7 +36,8 @@ public class TuffGolemStack extends Behavior<TuffGolemEntity> {
     protected boolean checkExtraStartConditions(ServerLevel serverLevel, TuffGolemEntity tuffGolem) {
         return  tuffGolem.wantsToStack()
                 && !tuffGolem.isPetrified()
-                && this.findValidStackPartner(tuffGolem).isPresent();
+                && this.findValidStackPartner(tuffGolem).isPresent()
+                && tuffGolem.getBottomTuffGolem(tuffGolem).getNumOfTuffGolemsAbove(tuffGolem, 1) < tuffGolem.getMaxStackSize();
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity tuffGolem, long l) {
@@ -61,9 +63,15 @@ public class TuffGolemStack extends Behavior<TuffGolemEntity> {
         BehaviorUtils.lockGazeAndWalkToEachOther(tuffGolem, stackTarget, this.speedModifier);
         if (tuffGolem.closerThan(stackTarget, 2.0D)) {
             if (l >= this.stackAtTime) {
-                //tuffGolem.moveTo(stackTarget.getX(), stackTarget.getY(), stackTarget.getZ(), stackTarget.getYRot(), 0.0F);
                 tuffGolem.startRiding(stackTarget);
                 tuffGolem.setYRot(stackTarget.getYRot());
+                tuffGolem.setHeightDimensionState(1);
+                tuffGolem.setWidthDimensionState(1);
+                tuffGolem.setPassengersRidingOffset(0.9D);
+                stackTarget.setHeightDimensionState(stackTarget.getNumOfTuffGolemsAbove(stackTarget, 1));
+                stackTarget.setWidthDimensionState(2);
+                stackTarget.setPassengersRidingOffset(stackTarget.getNumOfTuffGolemsAbove(stackTarget, 1) - 0.1);
+                TuffGolem.LOGGER.info("There are " + stackTarget.getNumOfTuffGolemsAbove(stackTarget, 1) + " Tuff Golems stacked.");
                 tuffGolem.getBrain().eraseMemory(ModMemoryModules.STACK_TARGET.get());
                 stackTarget.getBrain().eraseMemory(ModMemoryModules.STACK_TARGET.get());
             }

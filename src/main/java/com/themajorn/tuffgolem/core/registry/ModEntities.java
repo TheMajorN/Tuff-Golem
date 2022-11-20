@@ -14,6 +14,6 @@ public class ModEntities {
 
     public static final RegistryObject<EntityType<TuffGolemEntity>> TUFF_GOLEM = ENTITIES.register("tuff_golem",
             () -> EntityType.Builder.of(TuffGolemEntity::new, MobCategory.MISC)
-                    .sized(0.6F, 1.3F)
+                    .sized(0.6F, 0.9F)
                     .build(new ResourceLocation(TuffGolem.MOD_ID, "tuff_golem").toString()));
 }

@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.*;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.client.renderer.entity.layers.WolfCollarLayer;
@@ -94,7 +95,7 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
         if (item == this.mainHand) {
             matrixStack.translate(0.0, 0.22, -0.6);
             matrixStack.scale(0.6F, 0.6F, 0.6F);
-            float f3 = currentEntity.getSpin(1.0F);
+            float f3 = currentEntity.getSpin(5.5F);
             matrixStack.mulPose(Vector3f.YP.rotation(f3));
             Minecraft.getInstance().getItemRenderer()
                     .renderStatic(this.currentEntityBeingRendered.getItemInHand(InteractionHand.MAIN_HAND),
@@ -103,6 +104,8 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
         }
     }
 
+
+
     @Override
     protected void postRenderItem(PoseStack matrixStack, ItemStack item, String boneName, TuffGolemEntity currentEntity, IBone bone) {
 
@@ -110,7 +113,16 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
 
     @Override
     protected void preRenderBlock(PoseStack matrixStack, BlockState block, String boneName, TuffGolemEntity currentEntity) {
-
+        if (currentEntity.getItemInHand(InteractionHand.MAIN_HAND).is(block.getBlock().asItem())) {
+            matrixStack.translate(0.0, 0.22, -0.6);
+            matrixStack.scale(0.6F, 0.6F, 0.6F);
+            //float f3 = currentEntity.getSpin(0.5F);
+            //matrixStack.mulPose(Vector3f.YP.rotation(f3));
+            Minecraft.getInstance().getItemRenderer()
+                    .renderStatic(this.currentEntityBeingRendered.getItemInHand(InteractionHand.MAIN_HAND),
+                            ItemTransforms.TransformType.THIRD_PERSON_RIGHT_HAND,
+                            1, 1, matrixStack, this.rtb, 1);
+        }
     }
 
     @Override
