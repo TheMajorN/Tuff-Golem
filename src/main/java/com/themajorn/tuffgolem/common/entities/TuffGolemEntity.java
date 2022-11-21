@@ -294,6 +294,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 this.setYRot(0.0F);
             }
         }
+
     }
 
     // ====================================== GETTERS, SETTERS, CHECKERS ============================================ //
@@ -336,6 +337,13 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 double d1 = this.random.nextGaussian() * 0.02D;
                 double d2 = this.random.nextGaussian() * 0.02D;
                 this.level.addParticle(ParticleTypes.POOF, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
+            }
+        }
+
+        if (!this.isPassenger() && this.getNumOfTuffGolemsAbove(this, 1) != this.getHeightDimensionState()) {
+            this.setHeightDimensionState(this.getNumOfTuffGolemsAbove(this, 1));
+            if (this.getFirstPassenger() == null) {
+                this.setWidthDimensionState(1);
             }
         }
     }
@@ -430,6 +438,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     public void setWidthDimensionState(int state) {
         this.entityData.set(DATA_WIDTH_DIMENSION_STATE, state);
+    }
+
+    public void resetDimensionState() {
+        this.setWidthDimensionState(1);
+        this.setHeightDimensionState(1);
     }
 
     public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
@@ -553,7 +566,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 TuffGolemEntity lowestGolem = this.getBottomTuffGolem(this);
                 TuffGolemEntity highestGolem = this.getTopTuffGolem(this);
                 this.stopRiding();
-                this.dismountTo(this.getX() + 1, this.getY(), this.getZ() + 1);
+                //this.dismountTo(this.getX(), this.getY(), this.getZ());
                 if (lowestGolem.getFirstPassenger() != null) {
                     lowestGolem.setHeightDimensionState(lowestGolem.getNumOfTuffGolemsAbove(lowestGolem, 1));
                     lowestGolem.setPassengersRidingOffset(lowestGolem.getNumOfTuffGolemsAbove(lowestGolem, 1));

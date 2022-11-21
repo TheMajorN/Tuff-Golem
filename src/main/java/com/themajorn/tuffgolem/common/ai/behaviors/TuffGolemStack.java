@@ -65,8 +65,7 @@ public class TuffGolemStack extends Behavior<TuffGolemEntity> {
             if (l >= this.stackAtTime) {
                 tuffGolem.startRiding(stackTarget);
                 tuffGolem.setYRot(stackTarget.getYRot());
-                tuffGolem.setHeightDimensionState(1);
-                tuffGolem.setWidthDimensionState(1);
+                tuffGolem.resetDimensionState();
                 tuffGolem.setPassengersRidingOffset(0.9D);
                 stackTarget.setHeightDimensionState(stackTarget.getNumOfTuffGolemsAbove(stackTarget, 1));
                 stackTarget.setWidthDimensionState(2);
