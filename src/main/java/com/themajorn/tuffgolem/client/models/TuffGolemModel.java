@@ -2,6 +2,7 @@ package com.themajorn.tuffgolem.client.models;
 
 import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
+import net.minecraft.client.model.ZombieModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import software.bernie.geckolib3.core.IAnimatable;

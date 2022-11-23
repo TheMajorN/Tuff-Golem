@@ -1,0 +1,84 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.unknown",
+				"texture_width": 16,
+				"texture_height": 16,
+				"visible_bounds_width": 2,
+				"visible_bounds_height": 2.5,
+				"visible_bounds_offset": [0, 0.75, 0]
+			},
+			"bones": [
+				{
+					"name": "body",
+					"pivot": [0, 9.04358, -2.25]
+				},
+				{
+					"name": "cape",
+					"parent": "body",
+					"pivot": [0, 7, 0],
+					"cubes": [
+						{
+							"origin": [-4.5, -18.5, 16.5],
+							"size": [9, 0, 6],
+							"pivot": [0, -14, 0],
+							"rotation": [90, 0, 0],
+							"uv": {
+								"north": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"east": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"south": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"west": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"up": {"uv": [14, 0], "uv_size": [-2.5, 0]},
+								"down": {"uv": [10, 1.5], "uv_size": [-2.25, -1.5]}
+							}
+						},
+						{
+							"origin": [-4.5, -9.5, 16.5],
+							"size": [9, 0, 6],
+							"pivot": [0, -14, 0],
+							"rotation": [90, 0, 0],
+							"uv": {
+								"north": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"east": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"south": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"west": {"uv": [0, 0], "uv_size": [2.125, 0]},
+								"up": {"uv": [14, 0], "uv_size": [-2.5, 0]},
+								"down": {"uv": [10, 1.5], "uv_size": [-2.25, -1.5]}
+							}
+						},
+						{
+							"origin": [-4.5, 7.5, -4.5],
+							"size": [9, 1, 9],
+							"uv": {
+								"north": {"uv": [4.75, 16], "uv_size": [2.25, 0]},
+								"east": {"uv": [7.8125, 5.5625], "uv_size": [2.25, 0.25]},
+								"south": {"uv": [0, 16], "uv_size": [2.25, 0]},
+								"west": {"uv": [7.8125, 5.9375], "uv_size": [2.25, 0.25]},
+								"up": {"uv": [10.0625, 5.375], "uv_size": [-2.25, -2.25]},
+								"down": {"uv": [4.5625, 16], "uv_size": [-2.25, 0]}
+							}
+						}
+					]
+				},
+				{
+					"name": "right_arm",
+					"pivot": [-4.05, 11, 0]
+				},
+				{
+					"name": "left_arm",
+					"pivot": [4, 11, 0]
+				},
+				{
+					"name": "left_leg",
+					"pivot": [1.95, 3, 0]
+				},
+				{
+					"name": "right_leg",
+					"pivot": [-1.95, 3, 0]
+				}
+			]
+		}
+	]
+}

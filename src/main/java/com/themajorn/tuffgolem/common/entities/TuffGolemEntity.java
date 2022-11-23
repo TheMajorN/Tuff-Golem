@@ -62,6 +62,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     private static final EntityDataAccessor<Byte> DATA_CAN_PETRIFY = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_ANIMATED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_ANIMATING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_IS_GIVING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_IS_RECEIVING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_HAS_CLOAK = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
 
     private final SimpleContainer inventory = new SimpleContainer(1);
@@ -92,8 +94,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     private static final Vec3i TUFF_GOLEM_ITEM_PICKUP_REACH = new Vec3i(2, 1, 2);
 
-    private boolean isReceiving;
-    private boolean isGiving;
     private double rideDimensions = 1.0D;
     private final int maxStackSize = 5;
     private int age;
@@ -130,6 +130,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.entityData.define(DATA_CAN_PETRIFY, (byte) 0);
         this.entityData.define(DATA_IS_ANIMATED, (byte) 0);
         this.entityData.define(DATA_IS_ANIMATING, (byte) 0);
+        this.entityData.define(DATA_IS_GIVING, (byte) 0);
+        this.entityData.define(DATA_IS_RECEIVING, (byte) 0);
         this.entityData.define(DATA_HAS_CLOAK, (byte)0 );
     }
 
@@ -141,6 +143,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         tag.putBoolean("isPetrifying", this.isPetrifying());
         tag.putBoolean("isAnimated", this.isAnimated());
         tag.putBoolean("isAnimating", this.isAnimating());
+        tag.putBoolean("isGiving", this.isGiving());
+        tag.putBoolean("isReceiving", this.isReceiving());
         tag.putBoolean("hasCloak", this.hasCloak());
         tag.putBoolean("canPetrify", this.cannotPetrify());
         tag.putByte("CloakColor", (byte) this.getCloakColor().getId());
@@ -162,6 +166,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.setCannotPetrify(tag.getBoolean("canPetrify"));
         this.setAnimated(tag.getBoolean("isAnimated"));
         this.setAnimating(tag.getBoolean("isAnimating"));
+        this.setGiving(tag.getBoolean("isGiving"));
+        this.setReceiving(tag.getBoolean("isReceiving"));
         this.setHeightDimensionState(Math.min(tag.getInt("heightDimensionState"), 2));
         this.setWidthDimensionState(Math.min(tag.getInt("widthDimensionState"), 2));
         this.setCloak(tag.getBoolean("hasCloak"));
@@ -180,6 +186,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         RandomSource randomsource = levelAccessor.getRandom();
         TuffGolemAi.initMemories(this, randomsource);
         spawnGroupData = super.finalizeSpawn(levelAccessor, difficulty, spawnType, spawnGroupData, tag);
+        this.setGiving(false);
+        this.setReceiving(false);
         this.setCanPickUpLoot(false);
         this.setAnimated(true);
         this.setAnimating(false);
@@ -203,8 +211,12 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_PETRIFIED);
         if (petrified) {
             this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 | 1));
+            TuffGolem.LOGGER.info("Set petrified!");
+
         } else {
             this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 & -2));
+            TuffGolem.LOGGER.info("Stopping petrified!");
+
         }
     }
 
@@ -212,8 +224,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_PETRIFYING);
         if (petrifying) {
             this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 | 1));
+            TuffGolem.LOGGER.info("Set petrifying!");
         } else {
             this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 & -2));
+            TuffGolem.LOGGER.info("Stopping petrifying!");
+
         }
     }
 
@@ -230,8 +245,10 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_ANIMATED);
         if (animated) {
             this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 | 1));
+            TuffGolem.LOGGER.info("Set animated!");
         } else {
             this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 & -2));
+            TuffGolem.LOGGER.info("Stopping animated!");
         }
     }
 
@@ -239,8 +256,32 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_ANIMATING);
         if (animating) {
             this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 | 1));
+            TuffGolem.LOGGER.info("Set animating!");
         } else {
             this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 & -2));
+            TuffGolem.LOGGER.info("Stopping animating!");
+        }
+    }
+
+    public void setGiving(boolean giving) {
+        byte b0 = this.entityData.get(DATA_IS_GIVING);
+        if (giving) {
+            this.entityData.set(DATA_IS_GIVING, (byte)(b0 | 1));
+
+        } else {
+            this.entityData.set(DATA_IS_GIVING, (byte)(b0 & -2));
+
+        }
+    }
+
+    public void setReceiving(boolean receiving) {
+        byte b0 = this.entityData.get(DATA_IS_RECEIVING);
+        if (receiving) {
+            this.entityData.set(DATA_IS_RECEIVING, (byte)(b0 | 1));
+
+        } else {
+            this.entityData.set(DATA_IS_RECEIVING, (byte)(b0 & -2));
+
         }
     }
 
@@ -304,8 +345,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public boolean isAnimated() { return (this.entityData.get(DATA_IS_ANIMATED) & 1) != 0; }
     public boolean isAnimating() { return (this.entityData.get(DATA_IS_ANIMATING) & 1) != 0; }
     public boolean hasCloak() { return (this.entityData.get(DATA_HAS_CLOAK) & 1) != 0; }
-    public boolean isReceiving() { return this.isReceiving; }
-    public boolean isGiving() { return this.isGiving; }
+    public boolean isReceiving() { return (this.entityData.get(DATA_IS_RECEIVING) & 1) != 0; }
+    public boolean isGiving() { return (this.entityData.get(DATA_IS_GIVING) & 1) != 0; }
     public boolean canPickUpLoot() { return !this.hasItemInHand() && this.hasCloak(); }
     public boolean canBreatheUnderwater() { return true; }
     public boolean cannotPetrify() { return (this.entityData.get(DATA_CAN_PETRIFY) & 1) != 0; }
@@ -508,10 +549,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     public void petrify() {
-        //setPetrifying(true);
+        setPetrifying(true);
         Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.0F);
         setAnimated(false);
         setPetrified(true);
+        setCanPickUpLoot(false);
     }
 
     public void animate() {
@@ -519,7 +561,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.15F);
         setPetrified(false);
         setAnimated(true);
-
+        setCanPickUpLoot(true);
     }
 
     protected void usePlayerItem(Player player, InteractionHand hand, ItemStack itemStack) {
@@ -564,9 +606,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             }
             else if (!this.level.isClientSide && this.isPassenger() && this.getPassengers().isEmpty()) {
                 TuffGolemEntity lowestGolem = this.getBottomTuffGolem(this);
-                TuffGolemEntity highestGolem = this.getTopTuffGolem(this);
                 this.stopRiding();
-                //this.dismountTo(this.getX(), this.getY(), this.getZ());
                 if (lowestGolem.getFirstPassenger() != null) {
                     lowestGolem.setHeightDimensionState(lowestGolem.getNumOfTuffGolemsAbove(lowestGolem, 1));
                     lowestGolem.setPassengersRidingOffset(lowestGolem.getNumOfTuffGolemsAbove(lowestGolem, 1));
@@ -638,7 +678,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
         // ANIMATE AND PETRIFY - DEBUG ONLY - REMOVE FOR FINAL VERSION
         else if (itemInPlayerHand.is(Items.TUFF) && player.isCrouching()) {
-            if (this.isAnimated() && !cannotPetrify()) {
+            if (this.isAnimated()) {
                 petrify();
             } else {
                 animate();
@@ -646,15 +686,9 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             return InteractionResult.SUCCESS;
         }
 
-        // GET NUMBER OF TUFF GOLEMS BELOW SELECTED - DEBUG ONLY - REMOVE FOR FINAL VERSION
-        else if (itemInPlayerHand.is(Items.IRON_INGOT) && player.isCrouching()) {
-            TuffGolem.LOGGER.info("There are " + getNumOfTuffGolemsAbove(this, 0) + " Tuff Golems above this one.");
-            return InteractionResult.SUCCESS;
-        }
-
         // GIVE ITEM
         else if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && hasCloak()) {
-            isReceiving = true;
+            setReceiving(true);
             ItemStack playerItemCopy = itemInPlayerHand.copy();
             playerItemCopy.setCount(1);
             this.setItemInHand(InteractionHand.MAIN_HAND, playerItemCopy);
@@ -665,11 +699,10 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
         // TAKE ITEM
         else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
-            isGiving = true;
-            this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            setGiving(true);
             this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
             this.swing(InteractionHand.MAIN_HAND);
-
+            this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
             for(ItemStack itemClearStack : this.getInventory().removeAllItems()) {
                 BehaviorUtils.throwItem(this, itemClearStack, this.position());
             }
@@ -719,19 +752,19 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     private <E extends IAnimatable> PlayState receivePredicate(AnimationEvent<E> event) {
-        if (this.isReceiving && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
+        if (this.isReceiving() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.receive", false));
-            isReceiving = false;
+            setReceiving(false);
         }
         return PlayState.CONTINUE;
     }
 
     private <E extends IAnimatable> PlayState givePredicate(AnimationEvent<E> event) {
-        if (this.isGiving && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
+        if (this.isGiving() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.give", false));
-            isGiving = false;
+            setGiving(false);
         }
         return PlayState.CONTINUE;
     }

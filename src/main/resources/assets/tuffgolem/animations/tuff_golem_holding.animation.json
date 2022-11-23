@@ -78,6 +78,10 @@
 				}
 			}
 		},
+		"animation.tuff_golem.idle": {
+			"loop": true,
+			"animation_length": 2.6
+		},
 		"animation.tuff_golem.receive": {
 			"animation_length": 0.6,
 			"bones": {
@@ -261,10 +265,6 @@
 					}
 				}
 			}
-		},
-		"animation.tuff_golem.idle": {
-			"loop": true,
-			"animation_length": 2.6
 		}
 	},
 	"geckolib_format_version": 2

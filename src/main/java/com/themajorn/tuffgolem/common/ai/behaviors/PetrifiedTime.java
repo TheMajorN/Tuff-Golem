@@ -1,6 +1,7 @@
 package com.themajorn.tuffgolem.common.ai.behaviors;
 
 import com.google.common.collect.ImmutableMap;
+import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import net.minecraft.server.level.ServerLevel;
@@ -20,7 +21,7 @@ public class PetrifiedTime extends Behavior<TuffGolemEntity> {
     }
 
     protected boolean canStillUse(ServerLevel serverLevel, TuffGolemEntity mob, long l) {
-        return mob.isOnGround() && !mob.isInWater() && !mob.isInLava() && !mob.cannotPetrify();
+        return mob.isOnGround() && !mob.isInWater() && !mob.isInLava() && !mob.cannotPetrify() && TuffGolemAi.isIdle(mob);
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity mob, long l) {

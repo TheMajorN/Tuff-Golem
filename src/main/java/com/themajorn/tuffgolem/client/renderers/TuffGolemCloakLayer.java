@@ -20,6 +20,8 @@ public class TuffGolemCloakLayer extends GeoLayerRenderer<TuffGolemEntity> {
         super(entityRendererIn);
     }
 
+
+
     @Override
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, TuffGolemEntity tuffGolem, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
         if (tuffGolem.hasCloak() && !tuffGolem.isInvisible()) {
