@@ -211,12 +211,9 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_PETRIFIED);
         if (petrified) {
             this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 | 1));
-            TuffGolem.LOGGER.info("Set petrified!");
 
         } else {
             this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 & -2));
-            TuffGolem.LOGGER.info("Stopping petrified!");
-
         }
     }
 
@@ -224,11 +221,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_PETRIFYING);
         if (petrifying) {
             this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 | 1));
-            TuffGolem.LOGGER.info("Set petrifying!");
         } else {
             this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 & -2));
-            TuffGolem.LOGGER.info("Stopping petrifying!");
-
         }
     }
 
@@ -245,10 +239,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_ANIMATED);
         if (animated) {
             this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 | 1));
-            TuffGolem.LOGGER.info("Set animated!");
         } else {
             this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 & -2));
-            TuffGolem.LOGGER.info("Stopping animated!");
         }
     }
 
@@ -256,10 +248,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         byte b0 = this.entityData.get(DATA_IS_ANIMATING);
         if (animating) {
             this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 | 1));
-            TuffGolem.LOGGER.info("Set animating!");
         } else {
             this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 & -2));
-            TuffGolem.LOGGER.info("Stopping animating!");
         }
     }
 
@@ -270,7 +260,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
         } else {
             this.entityData.set(DATA_IS_GIVING, (byte)(b0 & -2));
-
         }
     }
 
@@ -733,20 +722,20 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         return PlayState.CONTINUE;
     }
 
-    private <E extends IAnimatable> PlayState petrifyPredicate(AnimationEvent<E> event) {
-        if (this.isPetrifying() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
-            event.getController().markNeedsReload();
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.petrify", false));
-            setPetrifying(false);
-        }
-        return PlayState.CONTINUE;
-    }
-
     private <E extends IAnimatable> PlayState animatePredicate(AnimationEvent<E> event) {
         if (this.isAnimating() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.animate", false));
             setAnimating(false);
+        }
+        return PlayState.CONTINUE;
+    }
+
+    private <E extends IAnimatable> PlayState petrifyPredicate(AnimationEvent<E> event) {
+        if (this.isPetrifying() && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
+            event.getController().markNeedsReload();
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.petrify", false));
+            setPetrifying(false);
         }
         return PlayState.CONTINUE;
     }
@@ -777,10 +766,10 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 0, this::receivePredicate));
         data.addAnimationController(new AnimationController(this, "giveController",
                 0, this::givePredicate));
-        data.addAnimationController(new AnimationController(this, "petrifyController",
-                0, this::petrifyPredicate));
         data.addAnimationController(new AnimationController(this, "animateController",
                 0, this::animatePredicate));
+        data.addAnimationController(new AnimationController(this, "petrifyController",
+                0, this::petrifyPredicate));
     }
 
     @Override

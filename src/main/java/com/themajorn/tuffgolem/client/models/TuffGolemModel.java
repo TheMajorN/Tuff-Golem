@@ -22,10 +22,18 @@ public class TuffGolemModel extends AnimatedGeoModel<TuffGolemEntity> {
 
     @Override
     public ResourceLocation getTextureResource(TuffGolemEntity object) {
-        if (object.isPetrified()) {
-            return  new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified.png");
+        if (object.hasCloak()) {
+            if (object.isPetrified()) {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified_cloaked.png");
+            } else {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_cloaked.png");
+            }
         } else {
-            return  new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+            if (object.isPetrified()) {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified.png");
+            } else {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+            }
         }
     }
 

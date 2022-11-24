@@ -1,6 +1,7 @@
 package com.themajorn.tuffgolem.client.renderers;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -13,14 +14,12 @@ import software.bernie.geckolib3.renderers.geo.IGeoRenderer;
 
 public class TuffGolemCloakLayer extends GeoLayerRenderer<TuffGolemEntity> {
 
-    private static final ResourceLocation LAYER = new ResourceLocation(GeckoLib.ModID, "textures/entities/tuff_golem_cloak.png");
-    private static final ResourceLocation DEFAULT_MODEL = new ResourceLocation(GeckoLib.ModID, "geo/tuff_golem.geo.json");
-    private static final ResourceLocation HOLDING_MODEL = new ResourceLocation(GeckoLib.ModID, "geo/tuff_golem_holding.geo.json");
+    private static final ResourceLocation LAYER = new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_cloak.png");
+    private static final ResourceLocation DEFAULT_MODEL = new ResourceLocation(TuffGolem.MOD_ID, "geo/tuff_golem.geo.json");
+    private static final ResourceLocation HOLDING_MODEL = new ResourceLocation(TuffGolem.MOD_ID, "geo/tuff_golem_holding.geo.json");
     public TuffGolemCloakLayer(IGeoRenderer<TuffGolemEntity> entityRendererIn) {
         super(entityRendererIn);
     }
-
-
 
     @Override
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, TuffGolemEntity tuffGolem, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {

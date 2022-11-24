@@ -49,10 +49,18 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     @NotNull
     @Override
     public ResourceLocation getTextureLocation(@NotNull TuffGolemEntity instance) {
-        if (instance.isPetrified()) {
-            return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified.png");
+        if (instance.hasCloak()) {
+            if (instance.isPetrified()) {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified_cloaked.png");
+            } else {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_cloaked.png");
+            }
         } else {
-            return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+            if (instance.isPetrified()) {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem_petrified.png");
+            } else {
+                return new ResourceLocation(TuffGolem.MOD_ID, "textures/entities/tuff_golem.png");
+            }
         }
     }
 
