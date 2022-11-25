@@ -41,21 +41,22 @@ public class GoAndReturnItemToFrame<E extends LivingEntity> extends Behavior<Tuf
                 && !entity.isPetrified();
         if (!validStartConditions) {
             entity.getBrain().eraseMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get());
-            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 2);
+            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 6);
         }
         return validStartConditions;
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
         BehaviorUtils.setWalkAndLookTargetMemories(entity, this.getSelectedItemFrame(entity), this.speedModifier, 1);
+        TuffGolem.LOGGER.info("Attempting to return item!");
         entity.putBackItem();
     }
 
     protected boolean canStillUse(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
-        boolean validContinueConditions = getSelectedItemFrame(entity).getItem().isEmpty() && !entity.isPetrified() && entity.hasItemInHand();
+        boolean validContinueConditions = getSelectedItemFrame(entity).getItem().isEmpty() && entity.hasItemInHand();
         if (!validContinueConditions) {
             entity.getBrain().eraseMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get());
-            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 2);
+            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 6);
         }
         return validContinueConditions;
     }

@@ -27,7 +27,7 @@ public class PetrifyOrAnimate<E extends Mob> extends Behavior<TuffGolemEntity> {
     }
 
     protected boolean checkExtraStartConditions(@NotNull ServerLevel serverLevel, TuffGolemEntity mob) {
-        boolean isValidPosition = mob.isOnGround() && !mob.isInWater() && !mob.isInLava() && !mob.cannotPetrify() && TuffGolemAi.isIdle(mob);
+        boolean isValidPosition = mob.isOnGround() && !mob.isInWater() && !mob.isInLava() && !mob.stateLocked() && TuffGolemAi.isIdle(mob);
         if (!isValidPosition) {
             mob.getBrain().setMemory(ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(), this.timeBetweenAnimateOrPetrify.sample(serverLevel.random) / 2);
         }

@@ -40,16 +40,14 @@ public class GoAndTakeItemFromFrame<E extends LivingEntity> extends Behavior<Tuf
                 && !entity.hasItemInHand()
                 && !entity.isPetrified();
         if (!validStartConditions) {
-            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 2);
+            entity.getBrain().setMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), this.timeBetweenGoToItemFrame.sample(serverLevel.random) / 4);
         }
         return validStartConditions;
     }
 
     protected void start(ServerLevel serverLevel, TuffGolemEntity entity, long l) {
+        setClosestItemFrame(entity);
         BehaviorUtils.setWalkAndLookTargetMemories(entity, this.getClosestItemFrame(entity), this.speedModifier, 1);
-        if (entity.getBrain().checkMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), MemoryStatus.VALUE_ABSENT)) {
-            entity.getBrain().setMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), getClosestItemFrame(entity));
-        }
         entity.pickOutItem();
     }
 
@@ -63,6 +61,12 @@ public class GoAndTakeItemFromFrame<E extends LivingEntity> extends Behavior<Tuf
 
     private boolean isOnGoToCooldown(TuffGolemEntity entity) {
         return entity.getBrain().checkMemory(ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(), MemoryStatus.VALUE_PRESENT);
+    }
+
+    public void setClosestItemFrame(TuffGolemEntity entity) {
+        if (entity.getBrain().checkMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), MemoryStatus.VALUE_ABSENT)) {
+            entity.getBrain().setMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get(), getClosestItemFrame(entity));
+        }
     }
 
     private ItemFrame getClosestItemFrame(TuffGolemEntity entity) {

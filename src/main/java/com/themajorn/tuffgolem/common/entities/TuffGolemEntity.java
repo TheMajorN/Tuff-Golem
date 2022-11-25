@@ -2,7 +2,6 @@ package com.themajorn.tuffgolem.common.entities;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Dynamic;
-import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import com.themajorn.tuffgolem.core.registry.ModSensors;
@@ -36,6 +35,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.CarvedPumpkinBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.AnimationState;
@@ -59,7 +59,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     protected static final EntityDataAccessor<Byte> DATA_PLAYER_CREATED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_PETRIFIED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_PETRIFYING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
-    private static final EntityDataAccessor<Byte> DATA_CAN_PETRIFY = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_STATE_LOCKED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_ANIMATED = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_ANIMATING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_IS_GIVING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
@@ -127,7 +127,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.entityData.define(DATA_WIDTH_DIMENSION_STATE, 1);
         this.entityData.define(DATA_IS_PETRIFIED, (byte) 0);
         this.entityData.define(DATA_IS_PETRIFYING, (byte) 0);
-        this.entityData.define(DATA_CAN_PETRIFY, (byte) 0);
+        this.entityData.define(DATA_STATE_LOCKED, (byte) 0);
         this.entityData.define(DATA_IS_ANIMATED, (byte) 0);
         this.entityData.define(DATA_IS_ANIMATING, (byte) 0);
         this.entityData.define(DATA_IS_GIVING, (byte) 0);
@@ -146,7 +146,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         tag.putBoolean("isGiving", this.isGiving());
         tag.putBoolean("isReceiving", this.isReceiving());
         tag.putBoolean("hasCloak", this.hasCloak());
-        tag.putBoolean("canPetrify", this.cannotPetrify());
+        tag.putBoolean("stateLocked", this.stateLocked());
         tag.putByte("CloakColor", (byte) this.getCloakColor().getId());
         tag.putByte("stackSize", (byte) this.getStackSize());
         tag.putInt("wantsToStack", this.wantsToStack);
@@ -163,7 +163,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.setPlayerCreated(tag.getBoolean("PlayerCreated"));
         this.setPetrified(tag.getBoolean("isPetrified"));
         this.setPetrifying(tag.getBoolean("isPetrifying"));
-        this.setCannotPetrify(tag.getBoolean("canPetrify"));
+        this.lockState(tag.getBoolean("stateLocked"));
         this.setAnimated(tag.getBoolean("isAnimated"));
         this.setAnimating(tag.getBoolean("isAnimating"));
         this.setGiving(tag.getBoolean("isGiving"));
@@ -193,7 +193,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.setAnimating(false);
         this.setPetrified(false);
         this.setPetrifying(false);
-        this.setCannotPetrify(false);
+        this.lockState(false);
         this.setPassengersRidingOffset(0.9D);
         return spawnGroupData;
     }
@@ -226,12 +226,12 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
-    public void setCannotPetrify(boolean cannotPetrify) {
-        byte b0 = this.entityData.get(DATA_CAN_PETRIFY);
-        if (cannotPetrify) {
-            this.entityData.set(DATA_CAN_PETRIFY, (byte)(b0 | 1));
+    public void lockState(boolean locked) {
+        byte b0 = this.entityData.get(DATA_STATE_LOCKED);
+        if (locked) {
+            this.entityData.set(DATA_STATE_LOCKED, (byte)(b0 | 1));
         } else {
-            this.entityData.set(DATA_CAN_PETRIFY, (byte)(b0 & -2));
+            this.entityData.set(DATA_STATE_LOCKED, (byte)(b0 & -2));
         }
     }
 
@@ -338,7 +338,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     public boolean isGiving() { return (this.entityData.get(DATA_IS_GIVING) & 1) != 0; }
     public boolean canPickUpLoot() { return !this.hasItemInHand() && this.hasCloak(); }
     public boolean canBreatheUnderwater() { return true; }
-    public boolean cannotPetrify() { return (this.entityData.get(DATA_CAN_PETRIFY) & 1) != 0; }
+    public boolean stateLocked() { return (this.entityData.get(DATA_STATE_LOCKED) & 1) != 0; }
     public boolean hasItemInHand() { return !this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty(); }
     public boolean canTakeItem(@NotNull ItemStack stack) { return false; }
     public boolean isPlayerCreated() { return (this.entityData.get(DATA_PLAYER_CREATED) & 1) != 0; }
@@ -439,6 +439,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             return getNumOfTuffGolemsAbove((TuffGolemEntity) tuffGolem.getFirstPassenger(), i + 1);
         }
     }
+
+
 
     public TuffGolemEntity getBottomTuffGolem(TuffGolemEntity tuffGolem) {
         while (tuffGolem.getVehicle() != null) {
@@ -649,17 +651,17 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             return InteractionResult.SUCCESS;
         }
 
-        // ENABLE PETRIFY
-        else if (itemInPlayerHand.is(Items.HONEYCOMB) && player.isCrouching() && cannotPetrify()) {
-            this.setCannotPetrify(false);
+        // ENABLE STATE CHANGE
+        else if (itemInPlayerHand.is(Items.HONEYCOMB) && player.isCrouching() && !stateLocked()) {
+            this.lockState(true);
             usePlayerItem(player, hand, itemInPlayerHand);
             playSound(SoundEvents.HONEYCOMB_WAX_ON);
             return InteractionResult.SUCCESS;
         }
 
-        // DISABLE PETRIFY
-        else if (itemInPlayerHand.is(Items.WATER_BUCKET) && player.isCrouching() && !cannotPetrify()) {
-            this.setCannotPetrify(true);
+        // DISABLE STATE CHANGE
+        else if (itemInPlayerHand.is(Items.WATER_BUCKET) && player.isCrouching() && stateLocked()) {
+            this.lockState(false);
             player.setItemInHand(hand, Items.BUCKET.getDefaultInstance());
             playSound(SoundEvents.BUCKET_EMPTY);
             return InteractionResult.SUCCESS;

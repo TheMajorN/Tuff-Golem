@@ -34,9 +34,6 @@ public class ModMemoryModules<U> {
     public static final RegistryObject<MemoryModuleType<Integer>> GO_TO_ITEM_FRAME_COOLDOWN_TICKS = MEMORY_MODULES.register("item_frame_cooldown_ticks",
             () -> new MemoryModuleType<>(Optional.of(Codec.INT)));
 
-    public static final RegistryObject<MemoryModuleType<Integer>> GO_TO_CHEST_COOLDOWN_TICKS = MEMORY_MODULES.register("chest_cooldown_ticks",
-            () -> new MemoryModuleType<>(Optional.of(Codec.INT)));
-
     public static final RegistryObject<MemoryModuleType<Integer>> ANIMATE_OR_PETRIFY_COOLDOWN_TICKS = MEMORY_MODULES.register("animate_or_petrify_cooldown_ticks",
             () -> new MemoryModuleType<>(Optional.of(Codec.INT)));
 
@@ -47,9 +44,6 @@ public class ModMemoryModules<U> {
             () -> new MemoryModuleType<>(Optional.empty()));
 
     public static final RegistryObject<MemoryModuleType<ItemFrame>> NEAREST_VISIBLE_ITEM_FRAME = MEMORY_MODULES.register("nearest_visible_item_frame",
-            () -> new MemoryModuleType<>(Optional.empty()));
-
-    public static final RegistryObject<MemoryModuleType<ChestBlockEntity>> NEAREST_COMPATIBLE_CHEST = MEMORY_MODULES.register("nearest_compatible_chest",
             () -> new MemoryModuleType<>(Optional.empty()));
 
     public static final RegistryObject<MemoryModuleType<TuffGolemEntity>> STACK_TARGET = MEMORY_MODULES.register("stack_target",
