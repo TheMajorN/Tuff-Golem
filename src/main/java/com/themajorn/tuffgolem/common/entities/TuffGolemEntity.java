@@ -53,6 +53,8 @@ import java.util.UUID;
 
 public class TuffGolemEntity extends AbstractGolem implements IAnimatable, InventoryCarrier {
 
+    // === DATA ACCESSOR VARIABLES === //
+
     private static final EntityDataAccessor<Integer> DATA_CLOAK_COLOR = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_STACK_SIZE = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_HEIGHT_DIMENSION_STATE = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.INT);
@@ -67,7 +69,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     private static final EntityDataAccessor<Byte> DATA_IS_RECEIVING = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_HAS_CLOAK = SynchedEntityData.defineId(TuffGolemEntity.class, EntityDataSerializers.BYTE);
 
-    private final SimpleContainer inventory = new SimpleContainer(1);
+    // === SENSOR INITIALIZATION === //
 
     protected static final ImmutableList<SensorType<? extends Sensor<? super TuffGolemEntity>>> SENSOR_TYPES =
             ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES,
@@ -76,6 +78,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                             SensorType.NEAREST_ITEMS,
                             ModSensors.NEAREST_ITEM_FRAMES.get(),
                             ModSensors.TUFF_GOLEM_TEMPTATIONS.get());
+
+    // === MEMORY MODULE INITIALIZATION === //
 
     protected static final ImmutableList<MemoryModuleType<?>> MEMORY_TYPES =
             ImmutableList.of(MemoryModuleType.PATH,
@@ -93,21 +97,34 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                     MemoryModuleType.IS_TEMPTED,
                     ModMemoryModules.STACK_TARGET.get());
 
+    // === VARIABLES === //
+
     private static final Vec3i TUFF_GOLEM_ITEM_PICKUP_REACH = new Vec3i(2, 1, 2);
 
-    private double rideDimensions = 1.0D;
-    private final int maxStackSize = 5;
-    private int age;
-    private int wantsToStack;
+    private final SimpleContainer inventory = new SimpleContainer(1);
+
     @javax.annotation.Nullable
     private UUID stackCause;
-    public final float bobOffs;
-    private AnimationFactory factory = new AnimationFactory(this);
 
+    private final AnimationFactory factory = new AnimationFactory(this);
+
+    // === PRIMITIVE VARIABLES === //
+
+    private double rideDimensions = 1.0D;
+
+    private int age;
+
+    private int wantsToStack;
+
+    public final float bobOffs;
+
+    // ============================================= CONSTRUCTOR ==================================================== //
     public TuffGolemEntity(EntityType<? extends AbstractGolem> entityType, Level level) {
         super(entityType, level);
         this.bobOffs = this.random.nextFloat() * (float)Math.PI * 2.0F;
     }
+
+    // ============================================== ATTRIBUTES ==================================================== //
 
     public static AttributeSupplier.Builder setAttributes() {
         return Mob.createMobAttributes()
@@ -116,9 +133,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 .add(Attributes.ARMOR, 2.0D);
     }
 
-
-    // ========================================= SPAWNING & EXISTENCE =============================================== //
-
+    // ============================================= DATA SYNCING =================================================== //
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DATA_PLAYER_CREATED, (byte) 0);
@@ -180,8 +195,25 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.stackCause = tag.hasUUID("stackCause") ? tag.getUUID("stackCause") : null;
     }
 
-    @Nullable
-    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
+        if (DATA_HEIGHT_DIMENSION_STATE.equals(accessor) || DATA_WIDTH_DIMENSION_STATE.equals(accessor)) {
+            this.refreshDimensions();
+        }
+        super.onSyncedDataUpdated(accessor);
+    }
+
+    // ================================================ SOUNDS ====================================================== //
+
+    protected float nextStep() {
+        return super.nextStep() / 2;
+    }
+
+    protected void playStepSound(BlockPos pos, BlockState state) {
+        this.playSound(SoundEvents.IRON_GOLEM_STEP, 0.15F, 2.0F);
+    }
+
+    // ========================================= SPAWNING & EXISTENCE =============================================== //
+
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor levelAccessor, DifficultyInstance difficulty,
                                         MobSpawnType spawnType, @Nullable SpawnGroupData spawnGroupData, @Nullable CompoundTag tag) {
         RandomSource randomsource = levelAccessor.getRandom();
@@ -208,86 +240,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
-    public void setPetrified(boolean petrified) {
-        byte b0 = this.entityData.get(DATA_IS_PETRIFIED);
-        if (petrified) {
-            this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 | 1));
+    public boolean isPlayerCreated() { return (this.entityData.get(DATA_PLAYER_CREATED) & 1) != 0; }
 
-        } else {
-            this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 & -2));
-        }
-    }
-
-    public void setPetrifying(boolean petrifying) {
-        byte b0 = this.entityData.get(DATA_IS_PETRIFYING);
-        if (petrifying) {
-            this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 | 1));
-        } else {
-            this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 & -2));
-        }
-    }
-
-    public void lockState(boolean locked) {
-        byte b0 = this.entityData.get(DATA_STATE_LOCKED);
-        if (locked) {
-            this.entityData.set(DATA_STATE_LOCKED, (byte)(b0 | 1));
-        } else {
-            this.entityData.set(DATA_STATE_LOCKED, (byte)(b0 & -2));
-        }
-    }
-
-    public void setAnimated(boolean animated) {
-        byte b0 = this.entityData.get(DATA_IS_ANIMATED);
-        if (animated) {
-            this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 | 1));
-        } else {
-            this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 & -2));
-        }
-    }
-
-    public void setAnimating(boolean animating) {
-        byte b0 = this.entityData.get(DATA_IS_ANIMATING);
-        if (animating) {
-            this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 | 1));
-        } else {
-            this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 & -2));
-        }
-    }
-
-    public void setGiving(boolean giving) {
-        byte b0 = this.entityData.get(DATA_IS_GIVING);
-        if (giving) {
-            this.entityData.set(DATA_IS_GIVING, (byte)(b0 | 1));
-
-        } else {
-            this.entityData.set(DATA_IS_GIVING, (byte)(b0 & -2));
-        }
-    }
-
-    public void setReceiving(boolean receiving) {
-        byte b0 = this.entityData.get(DATA_IS_RECEIVING);
-        if (receiving) {
-            this.entityData.set(DATA_IS_RECEIVING, (byte)(b0 | 1));
-
-        } else {
-            this.entityData.set(DATA_IS_RECEIVING, (byte)(b0 & -2));
-
-        }
-    }
-
-    public void setCloak(boolean hasCloak) {
-        byte b0 = this.entityData.get(DATA_HAS_CLOAK);
-        if (hasCloak) {
-            this.entityData.set(DATA_HAS_CLOAK, (byte)(b0 | 1));
-        } else {
-            this.entityData.set(DATA_HAS_CLOAK, (byte)(b0 & -2));
-        }
-    }
-
-    @Override
-    public @NotNull SimpleContainer getInventory() { return this.inventory; }
-
-    @Override
     public void tick() {
         super.tick();
         if (this.isAlive()) {
@@ -328,270 +282,15 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     }
 
-    @Override
-    protected void playStepSound(BlockPos p_20135_, BlockState p_20136_) {
-        this.playSound(SoundEvents.IRON_GOLEM_STEP, 0.15F, 2.0F);
-    }
-
-
-
-    // ====================================== GETTERS, SETTERS, CHECKERS ============================================ //
-
-    public boolean isPetrified() { return (this.entityData.get(DATA_IS_PETRIFIED) & 1) != 0; }
-    public boolean isPetrifying() { return (this.entityData.get(DATA_IS_PETRIFYING) & 1) != 0; }
-    public boolean isAnimated() { return (this.entityData.get(DATA_IS_ANIMATED) & 1) != 0; }
-    public boolean isAnimating() { return (this.entityData.get(DATA_IS_ANIMATING) & 1) != 0; }
-    public boolean hasCloak() { return (this.entityData.get(DATA_HAS_CLOAK) & 1) != 0; }
-    public boolean isReceiving() { return (this.entityData.get(DATA_IS_RECEIVING) & 1) != 0; }
-    public boolean isGiving() { return (this.entityData.get(DATA_IS_GIVING) & 1) != 0; }
-    public boolean canPickUpLoot() { return !this.hasItemInHand() && this.hasCloak(); }
     public boolean canBreatheUnderwater() { return true; }
-    public boolean stateLocked() { return (this.entityData.get(DATA_STATE_LOCKED) & 1) != 0; }
-    public boolean hasItemInHand() { return !this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty(); }
-    public boolean canTakeItem(@NotNull ItemStack stack) { return false; }
-    public boolean isPlayerCreated() { return (this.entityData.get(DATA_PLAYER_CREATED) & 1) != 0; }
-    public DyeColor getCloakColor() { return DyeColor.byId(this.entityData.get(DATA_CLOAK_COLOR)); }
-    public void setCloakColor(DyeColor dyeColor) { this.entityData.set(DATA_CLOAK_COLOR, dyeColor.getId()); }
-    public int getStackSize() { return this.entityData.get(DATA_STACK_SIZE); }
-    public void setStackSize(int size) { this.entityData.set(DATA_STACK_SIZE, size); }
-    public int getMaxStackSize() { return this.maxStackSize; }
-    public @NotNull Vec3i getPickupReach() { return TUFF_GOLEM_ITEM_PICKUP_REACH; }
+
+    public Vec3i getPickupReach() { return TUFF_GOLEM_ITEM_PICKUP_REACH; }
+
     public int getAge() { return this.age; }
+
     public float getSpin(float i) { return ((float)this.getAge() + i) / 20.0F + this.bobOffs; }
 
-    // ============================================== AI AND BRAIN ================================================== //
-
-    @Override
-    public void aiStep() {
-        super.aiStep();
-        if (this.getAge() != 0) {
-            this.wantsToStack = 0;
-        }
-
-        if (this.wantsToStack > 0) {
-            --this.wantsToStack;
-            if (this.wantsToStack % 10 == 0) {
-                double d0 = this.random.nextGaussian() * 0.02D;
-                double d1 = this.random.nextGaussian() * 0.02D;
-                double d2 = this.random.nextGaussian() * 0.02D;
-                this.level.addParticle(ParticleTypes.POOF, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
-            }
-        }
-
-        if (!this.isPassenger() && this.getNumOfTuffGolemsAbove(this, 1) != this.getHeightDimensionState()) {
-            this.setHeightDimensionState(this.getNumOfTuffGolemsAbove(this, 1));
-            if (this.getFirstPassenger() == null) {
-                this.setWidthDimensionState(1);
-            }
-        }
-    }
-
-
-    protected Brain.@NotNull Provider<TuffGolemEntity> brainProvider() {
-        return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
-    }
-
-    protected @NotNull Brain<?> makeBrain(@NotNull Dynamic<?> dynamic) {
-        return TuffGolemAi.makeBrain(this.brainProvider().makeBrain(dynamic));
-    }
-
-    public @NotNull Brain<TuffGolemEntity> getBrain() {
-        return (Brain<TuffGolemEntity>)super.getBrain();
-    }
-
-    @Override
-    protected void pickUpItem(ItemEntity itemOnGround) {
-        this.onItemPickup(itemOnGround);
-        TuffGolemAi.pickUpItem(this, itemOnGround);
-    }
-
-    public void pickOutItem() {
-        Vec3i reach = this.getPickupReach();
-        if (!this.level.isClientSide
-                && this.canPickUpLoot()
-                && this.isAlive()
-                && !this.dead
-                && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
-            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(reach.getX(), reach.getY(), reach.getZ()))) {
-                if (!itemFrame.isRemoved() && !itemFrame.getItem().isEmpty() && !this.hasItemInHand()) {
-                    ItemStack itemstack = itemFrame.getItem();
-                    if (this.getBrain().getMemory(ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get()).isPresent()) {
-                        this.setItemInHand(InteractionHand.MAIN_HAND, itemstack);
-                        itemFrame.setItem(ItemStack.EMPTY);
-                    }
-                }
-            }
-        }
-    }
-
-    public boolean isStacked() {
-        return this.isPassenger() && this.getVehicle() instanceof TuffGolemEntity;
-    }
-
-    public TuffGolemEntity getTuffGolemBelow() {
-        return (TuffGolemEntity) this.getVehicle();
-    }
-
-    @Override
-    public double getPassengersRidingOffset() {
-        return rideDimensions;
-    }
-
-    public void setPassengersRidingOffset(double offset) {
-        rideDimensions = offset;
-    }
-
-    public int getNumOfTuffGolemsAbove(TuffGolemEntity tuffGolem, int i) {
-        if (!tuffGolem.isVehicle()) {
-            return i;
-        } else {
-            return getNumOfTuffGolemsAbove((TuffGolemEntity) tuffGolem.getFirstPassenger(), i + 1);
-        }
-    }
-
-
-
-    public TuffGolemEntity getBottomTuffGolem(TuffGolemEntity tuffGolem) {
-        while (tuffGolem.getVehicle() != null) {
-            tuffGolem = (TuffGolemEntity) tuffGolem.getVehicle();
-        }
-        return tuffGolem;
-    }
-
-    public TuffGolemEntity getTopTuffGolem(TuffGolemEntity tuffGolem) {
-        while (tuffGolem.getFirstPassenger() != null) {
-            tuffGolem = (TuffGolemEntity) tuffGolem.getFirstPassenger();
-        }
-        return tuffGolem;
-    }
-
-    public int getHeightDimensionState() {
-        return this.entityData.get(DATA_HEIGHT_DIMENSION_STATE);
-    }
-
-    public void setHeightDimensionState(int state) {
-        this.entityData.set(DATA_HEIGHT_DIMENSION_STATE, state);
-    }
-
-    public int getWidthDimensionState() {
-        return this.entityData.get(DATA_WIDTH_DIMENSION_STATE);
-    }
-
-    public void setWidthDimensionState(int state) {
-        this.entityData.set(DATA_WIDTH_DIMENSION_STATE, state);
-    }
-
-    public void resetDimensionState() {
-        this.setWidthDimensionState(1);
-        this.setHeightDimensionState(1);
-    }
-
-    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
-        if (DATA_HEIGHT_DIMENSION_STATE.equals(accessor) || DATA_WIDTH_DIMENSION_STATE.equals(accessor)) {
-            this.refreshDimensions();
-        }
-        super.onSyncedDataUpdated(accessor);
-    }
-
-    public @NotNull EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(getWidthScale(this.getWidthDimensionState()), getHeightScale(this.getHeightDimensionState()));
-    }
-
-    private static float getHeightScale(int scale) {
-        return switch (scale) {
-            case 1 -> 0.99F;
-            case 2 -> 1.9F;
-            case 3 -> 2.9F;
-            case 4 -> 3.9F;
-            case 5 -> 4.9F;
-            default -> 0.99F;
-        };
-    }
-
-    private static float getWidthScale(int scale) {
-        return switch (scale) {
-            case 1 -> 1.0F;
-            case 2 -> 0.85F;
-            default -> 1.0F;
-        };
-    }
-
-    public void putBackItem() {
-        Vec3i vec3i = this.getPickupReach();
-        if (!this.level.isClientSide
-                && !this.canPickUpLoot()
-                && this.isAlive()
-                && !this.dead
-                && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
-            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(vec3i.getX(), vec3i.getY(), vec3i.getZ()))) {
-                if (!itemFrame.isRemoved() && itemFrame.getItem().isEmpty()) {
-                    ItemStack itemstack = this.getItemInHand(InteractionHand.MAIN_HAND);
-                    if (this.getBrain().getMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get()).isPresent()) {
-                        this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                        itemFrame.setItem(itemstack);
-                    }
-                }
-            }
-        }
-    }
-
-    protected void customServerAiStep() {
-        this.level.getProfiler().push("tuffGolemBrain");
-        this.getBrain().tick((ServerLevel)this.level, this);
-        this.level.getProfiler().pop();
-        this.level.getProfiler().push("tuffGolemActivityUpdate");
-        TuffGolemAi.updateActivity(this);
-        this.level.getProfiler().pop();
-        super.customServerAiStep();
-    }
-
-    public void petrify() {
-        setPetrifying(true);
-        this.playSound(ModSounds.PETRIFY_SOUND.get(), 0.3F, 1.0F);
-        Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.0F);
-        setAnimated(false);
-        setPetrified(true);
-        setCanPickUpLoot(false);
-    }
-
-    public void animate() {
-        setAnimating(true);
-        this.playSound(ModSounds.ANIMATE_SOUND.get(), 0.3F, 1.0F);
-        Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.15F);
-        setPetrified(false);
-        setAnimated(true);
-        setCanPickUpLoot(true);
-    }
-
-    protected void usePlayerItem(Player player, InteractionHand hand, ItemStack itemStack) {
-        if (!player.getAbilities().instabuild) {
-            itemStack.shrink(1);
-        }
-    }
-
-    public boolean canStack() { return this.wantsToStack <= 0; }
-
-    public void setWantsToStack(@javax.annotation.Nullable Player player) {
-        this.wantsToStack = 600;
-        if (player != null) {
-            this.stackCause = player.getUUID();
-        }
-        this.level.broadcastEntityEvent(this, (byte)18);
-    }
-
-    public void setWantsToStackTime(int time) { this.wantsToStack = time; }
-
-    public int getWantsToStackTime() {
-        return this.wantsToStack;
-    }
-
-    public boolean wantsToStack() { return this.wantsToStack > 0; }
-
-    public void resetWantsToStack() {
-        this.wantsToStack = 0;
-    }
-
-    protected @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
+    protected InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
         ItemStack itemInPlayerHand = player.getItemInHand(hand);
         ItemStack itemInTuffGolemHand = this.getItemInHand(InteractionHand.MAIN_HAND);
         Item specificItemInPlayerHand = itemInPlayerHand.getItem();
@@ -715,13 +414,353 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
+    // =========================================== INVENTORY & LOOT ================================================= //
+
+    public SimpleContainer getInventory() { return this.inventory; }
+
+    public boolean canPickUpLoot() { return !this.hasItemInHand() && this.hasCloak(); }
+
+    public boolean hasItemInHand() { return !this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty(); }
+
+    public boolean canTakeItem(@NotNull ItemStack stack) { return false; }
+
+    protected void pickUpItem(ItemEntity itemOnGround) {
+        this.onItemPickup(itemOnGround);
+        TuffGolemAi.pickUpItem(this, itemOnGround);
+    }
+
+    public void pickOutItem() {
+        Vec3i reach = this.getPickupReach();
+        if (!this.level.isClientSide
+                && this.canPickUpLoot()
+                && this.isAlive()
+                && !this.dead
+                && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
+            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(reach.getX(), reach.getY(), reach.getZ()))) {
+                if (!itemFrame.isRemoved() && !itemFrame.getItem().isEmpty() && !this.hasItemInHand()) {
+                    ItemStack itemstack = itemFrame.getItem();
+                    if (this.getBrain().getMemory(ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get()).isPresent()) {
+                        this.setItemInHand(InteractionHand.MAIN_HAND, itemstack);
+                        itemFrame.setItem(ItemStack.EMPTY);
+                    }
+                }
+            }
+        }
+    }
+
+    public void putBackItem() {
+        Vec3i vec3i = this.getPickupReach();
+        if (!this.level.isClientSide
+                && !this.canPickUpLoot()
+                && this.isAlive()
+                && !this.dead
+                && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
+            for (ItemFrame itemFrame : this.level.getEntitiesOfClass(ItemFrame.class, this.getBoundingBox().inflate(vec3i.getX(), vec3i.getY(), vec3i.getZ()))) {
+                if (!itemFrame.isRemoved() && itemFrame.getItem().isEmpty()) {
+                    ItemStack itemstack = this.getItemInHand(InteractionHand.MAIN_HAND);
+                    if (this.getBrain().getMemory(ModMemoryModules.SELECTED_ITEM_FRAME.get()).isPresent()) {
+                        this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                        itemFrame.setItem(itemstack);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void usePlayerItem(Player player, InteractionHand hand, ItemStack itemStack) {
+        if (!player.getAbilities().instabuild) {
+            itemStack.shrink(1);
+        }
+    }
+
     private void removeInteractionItem(Player player, ItemStack stack) {
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
     }
 
-    // =============================================== ANIMATION =================================================== //
+    // =============================================== STACKING ===================================================== //
+
+    public int getStackSize() { return this.entityData.get(DATA_STACK_SIZE); }
+
+    public void setStackSize(int size) { this.entityData.set(DATA_STACK_SIZE, size); }
+
+    public int getMaxStackSize() {
+        return 5; }
+
+    public boolean isStacked() {
+        return this.isPassenger() && this.getVehicle() instanceof TuffGolemEntity;
+    }
+
+    public TuffGolemEntity getTuffGolemBelow() {
+        return (TuffGolemEntity) this.getVehicle();
+    }
+
+    public double getPassengersRidingOffset() {
+        return rideDimensions;
+    }
+
+    public void setPassengersRidingOffset(double offset) {
+        rideDimensions = offset;
+    }
+
+    public int getNumOfTuffGolemsAbove(TuffGolemEntity tuffGolem, int i) {
+        if (!tuffGolem.isVehicle()) {
+            return i;
+        } else {
+            return getNumOfTuffGolemsAbove((TuffGolemEntity) tuffGolem.getFirstPassenger(), i + 1);
+        }
+    }
+
+    public TuffGolemEntity getBottomTuffGolem(TuffGolemEntity tuffGolem) {
+        while (tuffGolem.getVehicle() != null) {
+            tuffGolem = (TuffGolemEntity) tuffGolem.getVehicle();
+        }
+        return tuffGolem;
+    }
+
+    public TuffGolemEntity getTopTuffGolem(TuffGolemEntity tuffGolem) {
+        while (tuffGolem.getFirstPassenger() != null) {
+            tuffGolem = (TuffGolemEntity) tuffGolem.getFirstPassenger();
+        }
+        return tuffGolem;
+    }
+
+    public int getHeightDimensionState() {
+        return this.entityData.get(DATA_HEIGHT_DIMENSION_STATE);
+    }
+
+    public void setHeightDimensionState(int state) {
+        this.entityData.set(DATA_HEIGHT_DIMENSION_STATE, state);
+    }
+
+    public int getWidthDimensionState() {
+        return this.entityData.get(DATA_WIDTH_DIMENSION_STATE);
+    }
+
+    public void setWidthDimensionState(int state) {
+        this.entityData.set(DATA_WIDTH_DIMENSION_STATE, state);
+    }
+
+    public void resetDimensionState() {
+        this.setWidthDimensionState(1);
+        this.setHeightDimensionState(1);
+    }
+
+    public EntityDimensions getDimensions(Pose pose) {
+        return super.getDimensions(pose).scale(getWidthScale(this.getWidthDimensionState()), getHeightScale(this.getHeightDimensionState()));
+    }
+
+    private static float getHeightScale(int scale) {
+        return switch (scale) {
+            case 1 -> 0.99F;
+            case 2 -> 1.9F;
+            case 3 -> 2.9F;
+            case 4 -> 3.9F;
+            case 5 -> 4.9F;
+            default -> 0.99F;
+        };
+    }
+
+    private static float getWidthScale(int scale) {
+        return switch (scale) {
+            case 1 -> 1.0F;
+            case 2 -> 0.85F;
+            default -> 1.0F;
+        };
+    }
+
+    public boolean canStack() { return this.wantsToStack <= 0; }
+
+    public void setWantsToStack(@javax.annotation.Nullable Player player) {
+        this.wantsToStack = 600;
+        if (player != null) {
+            this.stackCause = player.getUUID();
+        }
+        this.level.broadcastEntityEvent(this, (byte)18);
+    }
+
+    public void setWantsToStackTime(int time) { this.wantsToStack = time; }
+
+    public int getWantsToStackTime() {
+        return this.wantsToStack;
+    }
+
+    public boolean wantsToStack() { return this.wantsToStack > 0; }
+
+    public void resetWantsToStack() {
+        this.wantsToStack = 0;
+    }
+
+    // =========================================== ANIMATE & PETRIFY ================================================ //
+
+    public void petrify() {
+        setPetrifying(true);
+        this.playSound(ModSounds.PETRIFY_SOUND.get(), 0.3F, 1.0F);
+        Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.0F);
+        setAnimated(false);
+        setPetrified(true);
+        setCanPickUpLoot(false);
+    }
+
+    public void animate() {
+        setAnimating(true);
+        this.playSound(ModSounds.ANIMATE_SOUND.get(), 0.3F, 1.0F);
+        Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.15F);
+        setPetrified(false);
+        setAnimated(true);
+        setCanPickUpLoot(true);
+    }
+
+    public void setPetrified(boolean petrified) {
+        byte b0 = this.entityData.get(DATA_IS_PETRIFIED);
+        if (petrified) {
+            this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 | 1));
+
+        } else {
+            this.entityData.set(DATA_IS_PETRIFIED, (byte)(b0 & -2));
+        }
+    }
+
+    public void setPetrifying(boolean petrifying) {
+        byte b0 = this.entityData.get(DATA_IS_PETRIFYING);
+        if (petrifying) {
+            this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_PETRIFYING, (byte)(b0 & -2));
+        }
+    }
+
+    public void lockState(boolean locked) {
+        byte b0 = this.entityData.get(DATA_STATE_LOCKED);
+        if (locked) {
+            this.entityData.set(DATA_STATE_LOCKED, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_STATE_LOCKED, (byte)(b0 & -2));
+        }
+    }
+    public boolean stateLocked() { return (this.entityData.get(DATA_STATE_LOCKED) & 1) != 0; }
+
+    public void setAnimated(boolean animated) {
+        byte b0 = this.entityData.get(DATA_IS_ANIMATED);
+        if (animated) {
+            this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_ANIMATED, (byte)(b0 & -2));
+        }
+    }
+
+    public boolean isAnimated() { return (this.entityData.get(DATA_IS_ANIMATED) & 1) != 0; }
+
+    public boolean isPetrified() { return (this.entityData.get(DATA_IS_PETRIFIED) & 1) != 0; }
+
+    // ================================================ CLOAK ======================================================= //
+    public boolean hasCloak() { return (this.entityData.get(DATA_HAS_CLOAK) & 1) != 0; }
+
+    public DyeColor getCloakColor() { return DyeColor.byId(this.entityData.get(DATA_CLOAK_COLOR)); }
+
+    public void setCloakColor(DyeColor dyeColor) { this.entityData.set(DATA_CLOAK_COLOR, dyeColor.getId()); }
+
+    // ========================================= GIVE & RECEIVE ITEMS =============================================== //
+
+
+    // ============================================== AI & BRAIN ==================================================== //
+
+    public void aiStep() {
+        super.aiStep();
+        if (this.getAge() != 0) {
+            this.wantsToStack = 0;
+        }
+
+        if (this.wantsToStack > 0) {
+            --this.wantsToStack;
+            if (this.wantsToStack % 10 == 0) {
+                double d0 = this.random.nextGaussian() * 0.02D;
+                double d1 = this.random.nextGaussian() * 0.02D;
+                double d2 = this.random.nextGaussian() * 0.02D;
+                this.level.addParticle(ParticleTypes.POOF, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
+            }
+        }
+
+        if (!this.isPassenger() && this.getNumOfTuffGolemsAbove(this, 1) != this.getHeightDimensionState()) {
+            this.setHeightDimensionState(this.getNumOfTuffGolemsAbove(this, 1));
+            if (this.getFirstPassenger() == null) {
+                this.setWidthDimensionState(1);
+            }
+        }
+    }
+
+    protected void customServerAiStep() {
+        this.level.getProfiler().push("tuffGolemBrain");
+        this.getBrain().tick((ServerLevel)this.level, this);
+        this.level.getProfiler().pop();
+        this.level.getProfiler().push("tuffGolemActivityUpdate");
+        TuffGolemAi.updateActivity(this);
+        this.level.getProfiler().pop();
+        super.customServerAiStep();
+    }
+
+    protected Brain.@NotNull Provider<TuffGolemEntity> brainProvider() {
+        return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
+    }
+
+    protected Brain<?> makeBrain(@NotNull Dynamic<?> dynamic) {
+        return TuffGolemAi.makeBrain(this.brainProvider().makeBrain(dynamic));
+    }
+
+    public Brain<TuffGolemEntity> getBrain() {
+        return (Brain<TuffGolemEntity>)super.getBrain();
+    }
+
+
+    // =============================================== ANIMATION ==================================================== //
+
+    public void setAnimating(boolean animating) {
+        byte b0 = this.entityData.get(DATA_IS_ANIMATING);
+        if (animating) {
+            this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_IS_ANIMATING, (byte)(b0 & -2));
+        }
+    }
+
+    public void setGiving(boolean giving) {
+        byte b0 = this.entityData.get(DATA_IS_GIVING);
+        if (giving) {
+            this.entityData.set(DATA_IS_GIVING, (byte)(b0 | 1));
+
+        } else {
+            this.entityData.set(DATA_IS_GIVING, (byte)(b0 & -2));
+        }
+    }
+
+    public void setReceiving(boolean receiving) {
+        byte b0 = this.entityData.get(DATA_IS_RECEIVING);
+        if (receiving) {
+            this.entityData.set(DATA_IS_RECEIVING, (byte)(b0 | 1));
+
+        } else {
+            this.entityData.set(DATA_IS_RECEIVING, (byte)(b0 & -2));
+
+        }
+    }
+
+    public void setCloak(boolean hasCloak) {
+        byte b0 = this.entityData.get(DATA_HAS_CLOAK);
+        if (hasCloak) {
+            this.entityData.set(DATA_HAS_CLOAK, (byte)(b0 | 1));
+        } else {
+            this.entityData.set(DATA_HAS_CLOAK, (byte)(b0 & -2));
+        }
+    }
+
+    public boolean isPetrifying() { return (this.entityData.get(DATA_IS_PETRIFYING) & 1) != 0; }
+
+    public boolean isAnimating() { return (this.entityData.get(DATA_IS_ANIMATING) & 1) != 0; }
+
+    public boolean isReceiving() { return (this.entityData.get(DATA_IS_RECEIVING) & 1) != 0; }
+
+    public boolean isGiving() { return (this.entityData.get(DATA_IS_GIVING) & 1) != 0; }
 
     private <E extends IAnimatable> PlayState defaultPredicate(AnimationEvent<E> event) {
         if (event.isMoving()) {
@@ -768,7 +807,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         return PlayState.CONTINUE;
     }
 
-    @Override
     public void registerControllers(AnimationData data) {
         data.addAnimationController(new AnimationController(this, "controller",
                 0, this::defaultPredicate));
@@ -782,7 +820,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 0, this::petrifyPredicate));
     }
 
-    @Override
     public AnimationFactory getFactory() { return this.factory; }
 
 }
