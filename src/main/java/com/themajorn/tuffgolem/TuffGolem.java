@@ -29,6 +29,7 @@ public class TuffGolem
         ModItems.ITEMS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
+        ModSounds.SOUNDS.register(modEventBus);
         ModActivities.ACTIVITIES.register(modEventBus);
         ModMemoryModules.MEMORY_MODULES.register(modEventBus);
         ModSensors.SENSORS.register(modEventBus);

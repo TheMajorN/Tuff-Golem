@@ -25,9 +25,7 @@ public class NearestItemFrameSensor extends Sensor<Mob> {
 
     protected void doTick(ServerLevel level, Mob mob) {
         Brain<?> brain = mob.getBrain();
-        List<ItemFrame> list = level.getEntitiesOfClass(ItemFrame.class, mob.getBoundingBox().inflate(32.0D, 16.0D, 32.0D), (entity) -> {
-            return true;
-        });
+        List<ItemFrame> list = level.getEntitiesOfClass(ItemFrame.class, mob.getBoundingBox().inflate(32.0D, 16.0D, 32.0D), (entity) -> true);
         list.sort(Comparator.comparingDouble(mob::distanceToSqr));
         Optional<ItemFrame> optional = list.stream().filter((itemFrame) -> {
             if (!itemFrame.getItem().isEmpty()) {

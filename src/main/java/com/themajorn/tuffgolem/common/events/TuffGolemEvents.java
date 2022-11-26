@@ -9,11 +9,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.PathfinderMob;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.TemptGoal;
 import net.minecraft.world.entity.animal.*;
-import net.minecraft.world.entity.animal.horse.Horse;
 import net.minecraft.world.entity.animal.horse.Llama;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
@@ -26,7 +24,9 @@ import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.level.block.state.pattern.BlockPattern;
 import net.minecraft.world.level.block.state.pattern.BlockPatternBuilder;
 import net.minecraft.world.level.block.state.predicate.BlockStatePredicate;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -38,7 +38,8 @@ import java.util.function.Predicate;
 public class TuffGolemEvents {
 
     private static final Predicate<BlockState> PUMPKINS_PREDICATE = (state) -> state != null && (state.is(Blocks.CARVED_PUMPKIN) || state.is(Blocks.JACK_O_LANTERN));
-    private static final Ingredient FOOD_ITEMS = Ingredient.of(Items.CARROT, Items.POTATO, Items.BEETROOT);
+    private static final Ingredient PIG_FOOD = Ingredient.of(Items.CARROT, Items.POTATO, Items.BEETROOT);
+    private static final Ingredient RABBIT_FOOD = Ingredient.of(Items.CARROT, Items.GOLDEN_CARROT, Items.DANDELION);
 
     @SubscribeEvent
     public static void spawnTuffGolem(BlockEvent.EntityPlaceEvent event) {
@@ -73,23 +74,40 @@ public class TuffGolemEvents {
         }
     }
 
-        @SubscribeEvent
-        public static void tuffGolemAddGoal(EntityJoinLevelEvent event) {
-            if (event.getEntity() instanceof Cow
-                || event.getEntity() instanceof Sheep
-                || event.getEntity() instanceof Rabbit
-                || event.getEntity() instanceof Llama
-                || event.getEntity() instanceof MushroomCow) {
-                ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, Ingredient.of(Items.WHEAT), false));
-            }
-            if (event.getEntity() instanceof Chicken) {
-                ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, Ingredient.of(Items.WHEAT_SEEDS), false));
-            }
-            if (event.getEntity() instanceof Pig) {
-                ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, FOOD_ITEMS, false));
-            }
-            if (event.getEntity() instanceof Bee) {
-                ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, Ingredient.of(ItemTags.FLOWERS), false));
-            }
+    @SubscribeEvent
+    public static void initializeTuffGolemData(EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof TuffGolemEntity tuffGolem) {
+            tuffGolem.setGiving(false);
+            tuffGolem.setReceiving(false);
+            tuffGolem.setCanPickUpLoot(false);
+            tuffGolem.setAnimated(true);
+            tuffGolem.setAnimating(false);
+            tuffGolem.setPetrified(false);
+            tuffGolem.setPetrifying(false);
+            tuffGolem.lockState(false);
         }
+    }
+
+    @SubscribeEvent
+    public static void makeAnimalsFollowTuffGolem(EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof Cow
+            || event.getEntity() instanceof Sheep
+            || event.getEntity() instanceof Llama
+            || event.getEntity() instanceof MushroomCow) {
+            ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, Ingredient.of(Items.WHEAT), false));
+        }
+        if (event.getEntity() instanceof Chicken) {
+            ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, Ingredient.of(Items.WHEAT_SEEDS), false));
+        }
+        if (event.getEntity() instanceof Pig) {
+            ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, PIG_FOOD, false));
+        }
+        if (event.getEntity() instanceof Bee) {
+            ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, Ingredient.of(ItemTags.FLOWERS), false));
+        }
+        if (event.getEntity() instanceof Rabbit) {
+            ((Animal) event.getEntity()).goalSelector.addGoal(3, new TuffGolemTemptGoal((PathfinderMob) event.getEntity(), 1.25D, RABBIT_FOOD, false));
+        }
+    }
+
 }

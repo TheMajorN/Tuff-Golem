@@ -244,14 +244,14 @@
 					},
 					"scale": {
 						"0.0": {
-							"vector": [1, 1, 1]
+							"vector": [1.2, 1.2, 0.82]
 						},
 						"0.48": {
 							"vector": [1.2, 1.2, 0.75],
 							"easing": "easeInOutSine"
 						},
 						"1.24": {
-							"vector": [1.2, 1.2, 0.82],
+							"vector": [1, 1, 1],
 							"easing": "easeInOutCubic"
 						}
 					}
@@ -296,14 +296,14 @@
 					},
 					"scale": {
 						"0.0": {
-							"vector": [1, 1, 1]
+							"vector": [1.2, 1.2, 0.82]
 						},
 						"0.48": {
 							"vector": [1.2, 1.2, 0.75],
 							"easing": "easeInOutSine"
 						},
 						"1.24": {
-							"vector": [1.2, 1.2, 0.82],
+							"vector": [1, 1, 1],
 							"easing": "easeInOutCubic"
 						}
 					}

@@ -1,0 +1,26 @@
+{
+  "animate_sound": {
+    "subtitle": "sounds.tuffgolem.animate_sound",
+    "sounds": [
+      "tuffgolem:animate_sound"
+    ]
+  },
+  "petrify_sound": {
+    "subtitle": "sounds.tuffgolem.petrify_sound",
+    "sounds": [
+      "tuffgolem:petrify_sound"
+    ]
+  },
+  "receive_sound": {
+    "subtitle": "sounds.tuffgolem.receive_sound",
+    "sounds": [
+      "tuffgolem:receive_sound"
+    ]
+  },
+  "give_sound": {
+    "subtitle": "sounds.tuffgolem.give_sound",
+    "sounds": [
+      "tuffgolem:give_sound"
+    ]
+  }
+}

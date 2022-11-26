@@ -5,6 +5,8 @@ import com.mojang.serialization.Dynamic;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import com.themajorn.tuffgolem.core.registry.ModSensors;
+import com.themajorn.tuffgolem.core.registry.ModSounds;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -13,7 +15,6 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
@@ -27,7 +28,7 @@ import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
-import net.minecraft.world.entity.animal.*;
+import net.minecraft.world.entity.animal.AbstractGolem;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.InventoryCarrier;
@@ -35,7 +36,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
-import net.minecraft.world.level.block.CarvedPumpkinBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.AnimationState;
@@ -327,6 +328,13 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     }
 
+    @Override
+    protected void playStepSound(BlockPos p_20135_, BlockState p_20136_) {
+        this.playSound(SoundEvents.IRON_GOLEM_STEP, 0.15F, 2.0F);
+    }
+
+
+
     // ====================================== GETTERS, SETTERS, CHECKERS ============================================ //
 
     public boolean isPetrified() { return (this.entityData.get(DATA_IS_PETRIFIED) & 1) != 0; }
@@ -377,6 +385,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             }
         }
     }
+
 
     protected Brain.@NotNull Provider<TuffGolemEntity> brainProvider() {
         return Brain.provider(MEMORY_TYPES, SENSOR_TYPES);
@@ -533,14 +542,12 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.level.getProfiler().push("tuffGolemActivityUpdate");
         TuffGolemAi.updateActivity(this);
         this.level.getProfiler().pop();
-        //if (this.getAge() != 0) {
-        //    this.wantsToStack = 0;
-        //}
         super.customServerAiStep();
     }
 
     public void petrify() {
         setPetrifying(true);
+        this.playSound(ModSounds.PETRIFY_SOUND.get(), 0.3F, 1.0F);
         Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.0F);
         setAnimated(false);
         setPetrified(true);
@@ -549,6 +556,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     public void animate() {
         setAnimating(true);
+        this.playSound(ModSounds.ANIMATE_SOUND.get(), 0.3F, 1.0F);
         Objects.requireNonNull(this.getAttribute(Attributes.MOVEMENT_SPEED)).setBaseValue(0.15F);
         setPetrified(false);
         setAnimated(true);
@@ -620,6 +628,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             if (!player.getAbilities().instabuild) {
                 player.setItemInHand(hand, Items.STICK.getDefaultInstance());
             }
+            this.playSound(SoundEvents.ARMOR_EQUIP_LEATHER);
             this.setCloak(true);
             this.setCloakColor(color);
             return InteractionResult.SUCCESS;
@@ -629,6 +638,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         else if (specificItemInPlayerHand instanceof DyeItem && player.isCrouching()) {
             DyeColor dyecolor = ((DyeItem)specificItemInPlayerHand).getDyeColor();
             if (dyecolor != this.getCloakColor()) {
+                this.playSound(SoundEvents.DYE_USE);
                 this.setCloakColor(dyecolor);
                 if (!player.getAbilities().instabuild) {
                     itemInPlayerHand.shrink(1);
@@ -641,12 +651,12 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
         // REMOVE CLOAK
         else if (itemInPlayerHand.is(Items.STICK)
-                || itemInPlayerHand.is(itemInTuffGolemHand.getItem())
                 && player.isCrouching()
                 && itemInTuffGolemHand.isEmpty()
                 && this.hasCloak()) {
             DyeColor color = getCloakColor();
             player.setItemInHand(hand, BannerItem.byId(color.getId()).getDefaultInstance());
+            this.playSound(SoundEvents.ARMOR_EQUIP_LEATHER);
             this.setCloak(false);
             return InteractionResult.SUCCESS;
         }
@@ -677,21 +687,21 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             return InteractionResult.SUCCESS;
         }
 
-        // GIVE ITEM
-        else if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && !player.isCrouching() && hasCloak()) {
+        // GIVE ITEM TO TUFF GOLEM
+        else if (itemInTuffGolemHand.isEmpty() && !itemInPlayerHand.isEmpty() && hasCloak()) {
             setReceiving(true);
             ItemStack playerItemCopy = itemInPlayerHand.copy();
             playerItemCopy.setCount(1);
+            this.playSound(ModSounds.RECEIVE_SOUND.get(), 0.3F, 1.0F);
             this.setItemInHand(InteractionHand.MAIN_HAND, playerItemCopy);
             this.removeInteractionItem(player, itemInPlayerHand);
-            this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
             return InteractionResult.SUCCESS;
         }
 
-        // TAKE ITEM
+        // TAKE ITEM FROM TUFF GOLEM
         else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
             setGiving(true);
-            this.level.playSound(player, this, SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 2.0F, 1.0F);
+            this.playSound(ModSounds.GIVE_SOUND.get(), 0.3F, 1.0F);
             this.swing(InteractionHand.MAIN_HAND);
             this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
             for(ItemStack itemClearStack : this.getInventory().removeAllItems()) {
@@ -705,7 +715,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
     }
 
-
     private void removeInteractionItem(Player player, ItemStack stack) {
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
@@ -713,7 +722,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     // =============================================== ANIMATION =================================================== //
-
 
     private <E extends IAnimatable> PlayState defaultPredicate(AnimationEvent<E> event) {
         if (event.isMoving()) {
