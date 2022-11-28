@@ -3,6 +3,7 @@ package com.themajorn.tuffgolem.common.entities;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Dynamic;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
+import com.themajorn.tuffgolem.common.ai.behaviors.MoveToRedstoneLampGoal;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import com.themajorn.tuffgolem.core.registry.ModSensors;
 import com.themajorn.tuffgolem.core.registry.ModSounds;
@@ -25,6 +26,8 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
+import net.minecraft.world.entity.ai.goal.*;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
@@ -77,6 +80,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                             SensorType.HURT_BY,
                             SensorType.NEAREST_ITEMS,
                             ModSensors.NEAREST_ITEM_FRAMES.get(),
+                            ModSensors.NEAREST_REDSTONE_LAMP_SENSOR.get(),
                             ModSensors.TUFF_GOLEM_TEMPTATIONS.get());
 
     // === MEMORY MODULE INITIALIZATION === //
@@ -86,11 +90,14 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                     MemoryModuleType.LOOK_TARGET,
                     MemoryModuleType.WALK_TARGET,
                     MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE,
+                    ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get(),
+                    ModMemoryModules.NEAREST_REDSTONE_LAMP_MEMORY.get(),
                     ModMemoryModules.SELECTED_ITEM_FRAME_POSITION.get(),
                     ModMemoryModules.SELECTED_ITEM_FRAME.get(),
                     ModMemoryModules.ITEM_FRAME_POSITION.get(),
                     ModMemoryModules.GO_TO_ITEM_FRAME_COOLDOWN_TICKS.get(),
                     ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(),
+                    ModMemoryModules.GO_TO_REDSTONE_LAMP_COOLDOWN_TICKS.get(),
                     ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get(),
                     MemoryModuleType.TEMPTING_PLAYER,
                     MemoryModuleType.TEMPTATION_COOLDOWN_TICKS,
@@ -131,6 +138,10 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                 .add(Attributes.MOVEMENT_SPEED, 0.15F)
                 .add(Attributes.MAX_HEALTH, 10.0D)
                 .add(Attributes.ARMOR, 2.0D);
+    }
+
+    public void registerGoals() {
+        this.goalSelector.addGoal(0, new MoveToRedstoneLampGoal(this, 1.15, 20));
     }
 
     // ============================================= DATA SYNCING =================================================== //
@@ -203,10 +214,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     }
 
     // ================================================ SOUNDS ====================================================== //
-
-    protected float nextStep() {
-        return super.nextStep() / 2;
-    }
 
     protected void playStepSound(BlockPos pos, BlockState state) {
         this.playSound(SoundEvents.IRON_GOLEM_STEP, 0.15F, 2.0F);

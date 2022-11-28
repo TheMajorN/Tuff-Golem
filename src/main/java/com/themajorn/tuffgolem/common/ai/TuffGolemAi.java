@@ -20,6 +20,7 @@ import net.minecraft.world.entity.ai.behavior.*;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.animal.AbstractGolem;
+import net.minecraft.world.entity.animal.allay.AllayAi;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.schedule.Activity;
@@ -46,6 +47,7 @@ public class TuffGolemAi {
         initTakeItemFromFrameActivity(brain);
         initReturnItemToFrameActivity(brain);
         initPetrifyOrAnimateActivity(brain);
+        //initMoveToRedstoneLampActivity(brain);
         brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
         brain.setDefaultActivity(Activity.IDLE);
         brain.useDefaultActivity();
@@ -116,10 +118,21 @@ public class TuffGolemAi {
             ));
     }
 
+    private static void initMoveToRedstoneLampActivity(Brain<TuffGolemEntity> brain) {
+        brain.addActivityWithConditions(ModActivities.MOVE_TO_REDSTONE_LAMP.get(),
+                ImmutableList.of(
+                        Pair.of(0, new MoveToRedstoneLamp((tuffgolem) -> true, 1.25F, true, 20))),
+                ImmutableSet.of(
+                        Pair.of(ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get(), MemoryStatus.VALUE_ABSENT),
+                        Pair.of(MemoryModuleType.WALK_TARGET, MemoryStatus.VALUE_PRESENT),
+                        Pair.of(MemoryModuleType.TEMPTING_PLAYER, MemoryStatus.VALUE_ABSENT)
+                ));
+    }
+
     public static void updateActivity(TuffGolemEntity tuffGolem) {
         tuffGolem.getBrain().setActiveActivityToFirstValid(
             ImmutableList.of(
-                ModActivities.FORGET.get(),
+                ModActivities.MOVE_TO_REDSTONE_LAMP.get(),
                 ModActivities.RETURN_ITEM.get(),
                 ModActivities.TAKE_ITEM.get(),
                 ModActivities.ANIMATE_PETRIFY.get(),
@@ -157,8 +170,8 @@ public class TuffGolemAi {
             tuffGolem.take(itemOnGround, 1);
             itemstack = removeOneItemFromItemEntity(itemOnGround);
         }
-        boolean equippable = tuffGolem.equipItemIfPossible(itemstack);
-        if (!equippable) {
+        boolean equipIfPossible = tuffGolem.equipItemIfPossible(itemstack);
+        if (!equipIfPossible) {
             tuffGolem.setItemInHand(InteractionHand.MAIN_HAND, itemstack);
         }
     }

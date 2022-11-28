@@ -20,7 +20,7 @@ public class ModActivities {
     public static final RegistryObject<Activity> RETURN_ITEM = ACTIVITIES.register("return_item",
             () -> new Activity("return_item"));
 
-    public static final RegistryObject<Activity> FORGET = ACTIVITIES.register("forget",
-            () -> new Activity("forget"));
+    public static final RegistryObject<Activity> MOVE_TO_REDSTONE_LAMP = ACTIVITIES.register("move_to_redstone_lamp",
+            () -> new Activity("move_to_redstone_lamp"));
 
 }
