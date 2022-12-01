@@ -80,7 +80,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                             SensorType.HURT_BY,
                             SensorType.NEAREST_ITEMS,
                             ModSensors.NEAREST_ITEM_FRAMES.get(),
-                            ModSensors.NEAREST_REDSTONE_LAMP_SENSOR.get(),
+                            ModSensors.STRAY_LIGHT_SENSOR.get(),
                             ModSensors.TUFF_GOLEM_TEMPTATIONS.get());
 
     // === MEMORY MODULE INITIALIZATION === //

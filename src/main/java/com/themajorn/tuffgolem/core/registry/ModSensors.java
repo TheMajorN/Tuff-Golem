@@ -2,6 +2,7 @@ package com.themajorn.tuffgolem.core.registry;
 
 import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
+import com.themajorn.tuffgolem.common.ai.sensors.DetectStrayLightBlocks;
 import com.themajorn.tuffgolem.common.ai.sensors.NearestItemFrameSensor;
 import com.themajorn.tuffgolem.common.ai.sensors.NearestRedstoneLampSensor;
 import net.minecraft.world.entity.ai.sensing.Sensor;
@@ -20,6 +21,9 @@ public class ModSensors<U extends Sensor<?>> {
 
     public static final RegistryObject<SensorType<NearestRedstoneLampSensor>> NEAREST_REDSTONE_LAMP_SENSOR = SENSORS.register("nearest_redstone_lamp",
             () -> new SensorType<>(NearestRedstoneLampSensor::new));
+
+    public static final RegistryObject<SensorType<DetectStrayLightBlocks>> STRAY_LIGHT_SENSOR = SENSORS.register("stray_light_sensor",
+            () -> new SensorType<>(DetectStrayLightBlocks::new));
 
     public static final RegistryObject<SensorType<TemptingSensor>> TUFF_GOLEM_TEMPTATIONS = SENSORS.register("tuff_golem_temptations",
             () -> new SensorType<>(() -> new TemptingSensor(TuffGolemAi.getTemptations())));

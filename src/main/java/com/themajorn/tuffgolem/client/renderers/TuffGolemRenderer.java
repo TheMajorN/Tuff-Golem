@@ -2,6 +2,7 @@ package com.themajorn.tuffgolem.client.renderers;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Quaternion;
 import com.mojang.math.Vector3f;
 import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.client.models.TuffGolemModel;
@@ -17,11 +18,16 @@ import net.minecraft.client.renderer.entity.layers.WolfCollarLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.*;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.GlowLichenBlock;
+import net.minecraft.world.level.block.MultifaceBlock;
+import net.minecraft.world.level.block.WaterlilyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.example.client.DefaultBipedBoneIdents;
@@ -87,7 +93,7 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
     @Override
     protected ItemTransforms.TransformType getCameraTransformForItemAtBone(ItemStack boneItem, String boneName) {
         if ("cape".equals(boneName)) {
-            return ItemTransforms.TransformType.THIRD_PERSON_RIGHT_HAND;
+            return ItemTransforms.TransformType.GROUND;
         }
         return ItemTransforms.TransformType.NONE;
     }
@@ -100,15 +106,14 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
 
     @Override
     protected void preRenderItem(PoseStack matrixStack, ItemStack item, String boneName, TuffGolemEntity currentEntity, IBone bone) {
-        if (item == this.mainHand) {
+        if (shouldRenderAsBlock(item)) {
+            matrixStack.translate(0.0, 0.05, -0.55);
+            matrixStack.scale(1.1F, 1.1F, 1.1F);
+        } else {
             matrixStack.translate(0.0, 0.22, -0.55);
-            matrixStack.scale(0.6F, 0.6F, 0.6F);
+            matrixStack.scale(0.7F, 0.7F, 0.7F);
             float f3 = currentEntity.getSpin(5.5F);
             matrixStack.mulPose(Vector3f.YP.rotation(f3));
-            Minecraft.getInstance().getItemRenderer()
-                    .renderStatic(this.currentEntityBeingRendered.getItemInHand(InteractionHand.MAIN_HAND),
-                            ItemTransforms.TransformType.THIRD_PERSON_RIGHT_HAND,
-                            1, 1, matrixStack, this.rtb, 1);
         }
     }
 
@@ -121,20 +126,51 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
 
     @Override
     protected void preRenderBlock(PoseStack matrixStack, BlockState block, String boneName, TuffGolemEntity currentEntity) {
-        if (currentEntity.getItemInHand(InteractionHand.MAIN_HAND).is(block.getBlock().asItem())) {
-            matrixStack.translate(0.0, 0.22, -0.6);
-            matrixStack.scale(0.6F, 0.6F, 0.6F);
-            //float f3 = currentEntity.getSpin(0.5F);
-            //matrixStack.mulPose(Vector3f.YP.rotation(f3));
-            Minecraft.getInstance().getItemRenderer()
-                    .renderStatic(this.currentEntityBeingRendered.getItemInHand(InteractionHand.MAIN_HAND),
-                            ItemTransforms.TransformType.THIRD_PERSON_RIGHT_HAND,
-                            1, 1, matrixStack, this.rtb, 1);
-        }
+
     }
 
     @Override
     protected void postRenderBlock(PoseStack matrixStack, BlockState block, String boneName, TuffGolemEntity currentEntity) {
 
+    }
+    private boolean shouldRenderAsBlock(ItemStack item) {
+        return item == this.mainHand
+                && item.getItem() instanceof BlockItem
+                && !(item.getItem() instanceof ItemNameBlockItem)
+                && !(item.getItem() instanceof StandingAndWallBlockItem)
+                && !(item.getItem() instanceof BedItem)
+                && !(item.getItem() instanceof PlaceOnWaterBlockItem)
+                && !item.is(ItemTags.SAPLINGS)
+                && !item.is(Items.MANGROVE_PROPAGULE)
+                && !item.is(ItemTags.FLOWERS)
+                && !item.is(ItemTags.CANDLES)
+                && !item.is(ItemTags.DOORS)
+                && !item.is(Items.BAMBOO)
+                && !item.is(Items.KELP)
+                && !item.is(Items.LADDER)
+                && !item.is(Items.TURTLE_EGG)
+                && !item.is(Items.CAKE)
+                && !item.is(Items.CAULDRON)
+
+                && !item.is(Items.CHAIN)
+                && !item.is(Items.COBWEB)
+                && !item.is(Items.FERN)
+                && !item.is(Items.LARGE_FERN)
+                && !item.is(Items.GRASS)
+                && !item.is(Items.TALL_GRASS)
+                && !item.is(Items.SEAGRASS)
+                && !item.is(Items.RAIL)
+                && !item.is(Items.POWERED_RAIL)
+                && !item.is(Items.DETECTOR_RAIL)
+                && !item.is(Items.ACTIVATOR_RAIL)
+                && !item.is(Items.HOPPER)
+                && !item.is(Items.WEEPING_VINES)
+                && !item.is(Items.VINE)
+                && !item.is(Items.TWISTING_VINES)
+                && !item.is(Items.WARPED_ROOTS)
+                && !item.is(Items.WARPED_FUNGUS)
+                && !item.is(Items.CRIMSON_ROOTS)
+                && !item.is(Items.CRIMSON_FUNGUS)
+                ;
     }
 }
