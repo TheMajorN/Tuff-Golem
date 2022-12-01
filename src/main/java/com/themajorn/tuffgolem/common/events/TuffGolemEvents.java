@@ -81,13 +81,13 @@ public class TuffGolemEvents {
     @SubscribeEvent
     public static void initializeTuffGolemData(EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof TuffGolemEntity tuffGolem) {
-            tuffGolem.setGiving(false);
-            tuffGolem.setReceiving(false);
+            tuffGolem.isPetrifying = false;
+            tuffGolem.isAnimating = false;
+            tuffGolem.isGiving = false;
+            tuffGolem.isReceiving = false;
             tuffGolem.setCanPickUpLoot(false);
             tuffGolem.setAnimated(true);
-            tuffGolem.setAnimating(false);
             tuffGolem.setPetrified(false);
-            tuffGolem.setPetrifying(false);
             tuffGolem.lockState(false);
         }
     }
@@ -136,7 +136,7 @@ public class TuffGolemEvents {
                     for(int i1 = 0; i1 <= l; i1 = i1 > 0 ? -i1 : 1 - i1) {
                         for(int j1 = i1 < l && i1 > -l ? l : 0; j1 <= l; j1 = j1 > 0 ? -j1 : 1 - j1) {
                             mutableBlockPos.setWithOffset(pos, i1, k - 1, j1);
-                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(Blocks.LIGHT) && !mutableBlockPos.equals(pos)) {
+                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(Blocks.LIGHT) && !mutableBlockPos.equals(tuffGolem.blockPosition())) {
                                 //blockPos = mutableBlockPos;
                                 tuffGolem.level.setBlockAndUpdate(mutableBlockPos, Blocks.AIR.defaultBlockState());
                             }
@@ -144,88 +144,6 @@ public class TuffGolemEvents {
                     }
                 }
             }
-
-                /*
-                if (tuffGolem.level.getBlockState(pos.north()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().east()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().east(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().west()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().west(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.east()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.east(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().east()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().east(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().west()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().west(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.west()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.west(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().east().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().east().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().west().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().west().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.east().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.east().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().east().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().east().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().west().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().west().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.west().above()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.west().above(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().east().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().east().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.north().west().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.north().west().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.east().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.east().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().east().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().east().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.south().west().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.south().west().below(), Blocks.AIR.defaultBlockState());
-                }
-                if (tuffGolem.level.getBlockState(pos.west().below()).equals(Blocks.LIGHT.defaultBlockState())) {
-                    tuffGolem.level.setBlockAndUpdate(pos.west().below(), Blocks.AIR.defaultBlockState());
-                }
-
-                 */
-            }
         }
+    }
 }
