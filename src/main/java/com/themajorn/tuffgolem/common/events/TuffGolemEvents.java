@@ -3,10 +3,13 @@ package com.themajorn.tuffgolem.common.events;
 import com.themajorn.tuffgolem.TuffGolem;
 import com.themajorn.tuffgolem.common.ai.goals.TuffGolemTemptGoal;
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
+import com.themajorn.tuffgolem.core.registry.ModBlocks;
 import com.themajorn.tuffgolem.core.registry.ModEntities;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
@@ -15,17 +18,18 @@ import net.minecraft.world.entity.animal.horse.Llama;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.TorchBlock;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.level.block.state.pattern.BlockPattern;
 import net.minecraft.world.level.block.state.pattern.BlockPatternBuilder;
 import net.minecraft.world.level.block.state.predicate.BlockStatePredicate;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.redstone.Redstone;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -79,20 +83,6 @@ public class TuffGolemEvents {
     }
 
     @SubscribeEvent
-    public static void initializeTuffGolemData(EntityJoinLevelEvent event) {
-        if (event.getEntity() instanceof TuffGolemEntity tuffGolem) {
-            tuffGolem.isPetrifying = false;
-            tuffGolem.isAnimating = false;
-            tuffGolem.isGiving = false;
-            tuffGolem.isReceiving = false;
-            tuffGolem.setCanPickUpLoot(false);
-            tuffGolem.setAnimated(true);
-            tuffGolem.setPetrified(false);
-            tuffGolem.lockState(false);
-        }
-    }
-
-    @SubscribeEvent
     public static void makeAnimalsFollowTuffGolem(EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof Cow
             || event.getEntity() instanceof Sheep
@@ -119,26 +109,60 @@ public class TuffGolemEvents {
         LivingEntity tuffGolem = event.getEntity();
         BlockPos pos = tuffGolem.getOnPos().above();
         if (event.getEntity() instanceof TuffGolemEntity) {
-            int i = (int) 7L;
-            int j = (int) 7L;
+            int i = (int) 3L;
+            int j = (int) 3L;
             BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 
-            if (tuffGolem.level.getBlockState(pos).equals(Blocks.AIR.defaultBlockState())
-                    && tuffGolem.getMainHandItem().is(Items.GLOWSTONE)
-                    || tuffGolem.getMainHandItem().is(Items.GLOW_BERRIES)
-                    || tuffGolem.getMainHandItem().is(Items.TORCH)
-                    || tuffGolem.getMainHandItem().is(Items.SOUL_TORCH)
-                    || tuffGolem.getMainHandItem().is(Items.SHROOMLIGHT)) {
-                tuffGolem.level.setBlockAndUpdate(pos, Blocks.LIGHT.defaultBlockState());
+            if (tuffGolem.level.getBlockState(pos).equals(Blocks.AIR.defaultBlockState())) {
+                if (tuffGolem.getMainHandItem().is(Items.GLOWSTONE)
+                        || tuffGolem.getMainHandItem().is(Items.GLOW_BERRIES)
+                        || tuffGolem.getMainHandItem().is(Items.TORCH)
+                        || tuffGolem.getMainHandItem().is(Items.SOUL_TORCH)
+                        || tuffGolem.getMainHandItem().is(Items.SHROOMLIGHT)
+                        || tuffGolem.getMainHandItem().is(Items.LANTERN)
+                        || tuffGolem.getMainHandItem().is(Items.SOUL_LANTERN)
+                        || tuffGolem.getMainHandItem().is(Items.SEA_LANTERN)
+                        || tuffGolem.getMainHandItem().is(Items.JACK_O_LANTERN)) {
+                    tuffGolem.level.setBlockAndUpdate(pos, Blocks.LIGHT.defaultBlockState());
+                }
             }
+            if (tuffGolem.level.getBlockState(pos.above()).equals(Blocks.AIR.defaultBlockState())) {
+                if (tuffGolem.level.getBlockState(pos).getBlock() instanceof CarpetBlock
+                        || tuffGolem.level.getBlockState(pos).getBlock() instanceof SlabBlock
+                        || tuffGolem.level.getBlockState(pos).getBlock() instanceof TrapDoorBlock) {
+                    if (tuffGolem.getMainHandItem().is(Items.GLOWSTONE)
+                            || tuffGolem.getMainHandItem().is(Items.GLOW_BERRIES)
+                            || tuffGolem.getMainHandItem().is(Items.TORCH)
+                            || tuffGolem.getMainHandItem().is(Items.SOUL_TORCH)
+                            || tuffGolem.getMainHandItem().is(Items.SHROOMLIGHT)
+                            || tuffGolem.getMainHandItem().is(Items.LANTERN)
+                            || tuffGolem.getMainHandItem().is(Items.SOUL_LANTERN)
+                            || tuffGolem.getMainHandItem().is(Items.SEA_LANTERN)
+                            || tuffGolem.getMainHandItem().is(Items.JACK_O_LANTERN)) {
+                        tuffGolem.level.setBlockAndUpdate(pos, Blocks.LIGHT.defaultBlockState());
+                    }
+                }
+            }
+
             for(int k = 0; k <= j; k = k > 0 ? -k : 1 - k) {
                 for(int l = 0; l < i; ++l) {
                     for(int i1 = 0; i1 <= l; i1 = i1 > 0 ? -i1 : 1 - i1) {
                         for(int j1 = i1 < l && i1 > -l ? l : 0; j1 <= l; j1 = j1 > 0 ? -j1 : 1 - j1) {
                             mutableBlockPos.setWithOffset(pos, i1, k - 1, j1);
-                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(Blocks.LIGHT) && !mutableBlockPos.equals(tuffGolem.blockPosition())) {
-                                //blockPos = mutableBlockPos;
+                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(Blocks.LIGHT)
+                                    && !mutableBlockPos.equals(pos)
+                                    && !(tuffGolem.level.getBlockState(pos).getBlock() instanceof CarpetBlock)
+                                    && !(tuffGolem.level.getBlockState(pos).getBlock() instanceof SlabBlock)
+                                    && !(tuffGolem.level.getBlockState(pos).getBlock() instanceof TrapDoorBlock)) {
                                 tuffGolem.level.setBlockAndUpdate(mutableBlockPos, Blocks.AIR.defaultBlockState());
+                            }
+                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(Blocks.LIGHT)
+                                    && !mutableBlockPos.equals(pos.above())) {
+                                if ((tuffGolem.level.getBlockState(pos).getBlock() instanceof CarpetBlock)
+                                        || (tuffGolem.level.getBlockState(pos).getBlock() instanceof SlabBlock)
+                                        || (tuffGolem.level.getBlockState(pos).getBlock() instanceof TrapDoorBlock)) {
+                                    tuffGolem.level.setBlockAndUpdate(mutableBlockPos, Blocks.AIR.defaultBlockState());
+                                }
                             }
                         }
                     }
@@ -146,4 +170,58 @@ public class TuffGolemEvents {
             }
         }
     }
+
+    @SubscribeEvent
+    public static void tuffGolemConductRedstone(LivingEvent.LivingTickEvent event) {
+        LivingEntity tuffGolem = event.getEntity();
+        BlockPos pos = tuffGolem.getOnPos().above();
+        if (event.getEntity() instanceof TuffGolemEntity) {
+            int i = (int) 3L;
+            int j = (int) 3L;
+            BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+
+            if (tuffGolem.level.getBlockState(pos).equals(Blocks.AIR.defaultBlockState())
+                    && tuffGolem.getMainHandItem().is(Items.REDSTONE_BLOCK)
+                    || tuffGolem.getMainHandItem().is(Items.REDSTONE_TORCH)) {
+                tuffGolem.level.setBlockAndUpdate(pos, ModBlocks.REDSTONE_CONDUCTOR.get().defaultBlockState());
+            }
+            if (tuffGolem.level.getBlockState(pos.above()).equals(Blocks.AIR.defaultBlockState())) {
+                if (tuffGolem.level.getBlockState(pos).getBlock() instanceof CarpetBlock
+                    || tuffGolem.level.getBlockState(pos).getBlock() instanceof SlabBlock
+                    || tuffGolem.level.getBlockState(pos).getBlock() instanceof TrapDoorBlock) {
+                    if (tuffGolem.getMainHandItem().is(Items.REDSTONE_TORCH)
+                        || tuffGolem.getMainHandItem().is(Items.REDSTONE_BLOCK)) {
+                            tuffGolem.level.setBlockAndUpdate(pos, ModBlocks.REDSTONE_CONDUCTOR.get().defaultBlockState());
+                    }
+                }
+            }
+            for(int k = 0; k <= j; k = k > 0 ? -k : 1 - k) {
+                for(int l = 0; l < i; ++l) {
+                    for(int i1 = 0; i1 <= l; i1 = i1 > 0 ? -i1 : 1 - i1) {
+                        for(int j1 = i1 < l && i1 > -l ? l : 0; j1 <= l; j1 = j1 > 0 ? -j1 : 1 - j1) {
+                            mutableBlockPos.setWithOffset(pos, i1, k - 1, j1);
+                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(ModBlocks.REDSTONE_CONDUCTOR.get())
+                                    && !mutableBlockPos.equals(pos)
+                                    && !(tuffGolem.level.getBlockState(pos).getBlock() instanceof CarpetBlock)
+                                    && !(tuffGolem.level.getBlockState(pos).getBlock() instanceof SlabBlock)
+                                    && !(tuffGolem.level.getBlockState(pos).getBlock() instanceof TrapDoorBlock)) {
+                                tuffGolem.level.setBlockAndUpdate(mutableBlockPos, Blocks.AIR.defaultBlockState());
+                            }
+                            if (tuffGolem.level.getBlockState(mutableBlockPos).is(ModBlocks.REDSTONE_CONDUCTOR.get())
+                                    && !mutableBlockPos.equals(pos.above())) {
+                                if ((tuffGolem.level.getBlockState(pos).getBlock() instanceof CarpetBlock)
+                                        || (tuffGolem.level.getBlockState(pos).getBlock() instanceof SlabBlock)
+                                        || (tuffGolem.level.getBlockState(pos).getBlock() instanceof TrapDoorBlock)) {
+                                    tuffGolem.level.setBlockAndUpdate(mutableBlockPos, Blocks.AIR.defaultBlockState());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
 }

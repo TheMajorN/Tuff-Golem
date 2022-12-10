@@ -15,12 +15,14 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -32,6 +34,8 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.animal.AbstractGolem;
+import net.minecraft.world.entity.animal.Pufferfish;
+import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.InventoryCarrier;
@@ -39,6 +43,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -76,7 +82,6 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
                             SensorType.HURT_BY,
                             SensorType.NEAREST_ITEMS,
                             ModSensors.NEAREST_ITEM_FRAMES.get(),
-                            ModSensors.STRAY_LIGHT_SENSOR.get(),
                             ModSensors.TUFF_GOLEM_TEMPTATIONS.get());
 
     // === MEMORY MODULE INITIALIZATION === //
@@ -206,6 +211,14 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     protected void playStepSound(BlockPos pos, BlockState state) {
         this.playSound(SoundEvents.IRON_GOLEM_STEP, 0.15F, 2.0F);
+    }
+
+    protected SoundEvent getHurtSound(DamageSource p_27517_) {
+        return SoundEvents.IRON_GOLEM_HURT;
+    }
+
+    protected SoundEvent getDeathSound() {
+        return SoundEvents.IRON_GOLEM_DEATH;
     }
 
     // ========================================= SPAWNING & EXISTENCE =============================================== //
@@ -668,6 +681,12 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             if (this.getFirstPassenger() == null) {
                 this.setWidthDimensionState(1);
             }
+        }
+        if (this.level.getBlockState(this.getOnPos()).getBlock() instanceof HopperBlock
+                || this.level.getBlockState(this.getOnPos().below()).getBlock() instanceof HopperBlock
+                && !this.getMainHandItem().isEmpty()) {
+            this.spawnAtLocation(this.getMainHandItem());
+            this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         }
     }
 
