@@ -7,18 +7,25 @@ license="All rights reserved"
 modId="tuffgolem" #mandatory
 
 version="${file.jarVersion}" #mandatory
-displayName="Tuff Golem" #mandatory
+displayName="Community Tuff Golem" #mandatory
 
 logoFile="examplemod.png" #optional
-credits="Thanks to jakeItEasy for creating the entirety of the look and movements." #optional
+credits="Thanks to jakeItEasy for creating the entirety of the look and movement animation." #optional
 authors="jakeItEasy: Tuff Golem model, texture, & animations.  TheMajorN: Programming the Tuff Golem" #optional
 
 description='''
-This is a long form description of the mod. You can write whatever you want here
+The community Tuff Golem is here and ready to become part of your Minecraft family!
 
-Have some lorem ipsum.
+Make them useful workers with collecting and organizing loot, or keep them as a fun companion around the house!
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed mollis lacinia magna. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed sagittis luctus odio eu tempus. Interdum et malesuada fames ac ante ipsum primis in faucibus. Pellentesque volutpat ligula eget lacus auctor sagittis. In hac habitasse platea dictumst. Nunc gravida elit vitae sem vehicula efficitur. Donec mattis ipsum et arcu lobortis, eleifend sagittis sem rutrum. Cras pharetra quam eget posuere fermentum. Sed id tincidunt justo. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+-Use them as little workers going to and from your farms collecting loot.
+-Create a path for them to walk to and from specific areas using redstone lamps.
+-Stack them on top of each other and keep them around as statues or totems around your home.
+-Give them wheat and other animal food to draw in specific animals.
+-Turn them into moving display cases by having them take an item from your frame and walk it around, then put it back. (optional)
+-Just let them roam around in your home, picking up the trash and displaying any item or block you want!
+
+With these little fellas in your house, you'll have a Tuff time parting with them!
 '''
 [[dependencies.tuffgolem]] #optional
     # the modid of the dependency

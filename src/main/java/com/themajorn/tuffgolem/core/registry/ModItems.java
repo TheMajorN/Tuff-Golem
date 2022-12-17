@@ -13,6 +13,6 @@ public class ModItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, TuffGolem.MOD_ID);
 
     public static final RegistryObject<BlockItem> REDSTONE_CONDUCTOR = ITEMS.register("redstone_conductor",
-            () -> new BlockItem(ModBlocks.REDSTONE_CONDUCTOR.get(), new Item.Properties().tab(CreativeModeTab.TAB_BUILDING_BLOCKS)));
+            () -> new BlockItem(ModBlocks.REDSTONE_CONDUCTOR.get(), new Item.Properties()));
 
 }
