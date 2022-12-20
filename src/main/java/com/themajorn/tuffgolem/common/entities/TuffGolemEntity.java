@@ -52,10 +52,12 @@ import software.bernie.geckolib3.core.AnimationState;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
+import software.bernie.geckolib3.core.builder.ILoopType;
 import software.bernie.geckolib3.core.controller.AnimationController;
 import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
+import software.bernie.geckolib3.util.GeckoLibUtil;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -114,7 +116,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     @javax.annotation.Nullable
     private UUID stackCause;
 
-    private final AnimationFactory factory = new AnimationFactory(this);
+    private AnimationFactory factory = GeckoLibUtil.createFactory(this);
 
     // === PRIMITIVE VARIABLES === //
 
@@ -726,17 +728,17 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     private <E extends IAnimatable> PlayState defaultPredicate(AnimationEvent<E> event) {
         if (event.isMoving()) {
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.walk", true));
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.walk", ILoopType.EDefaultLoopTypes.LOOP));
             return PlayState.CONTINUE;
         }
-        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.idle", true));
+        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.idle", ILoopType.EDefaultLoopTypes.LOOP));
         return PlayState.CONTINUE;
     }
 
     private <E extends IAnimatable> PlayState animatePredicate(AnimationEvent<E> event) {
         if (this.isAnimating && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.animate", false));
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.animate", ILoopType.EDefaultLoopTypes.PLAY_ONCE));
             this.isAnimating = false;
         }
         return PlayState.CONTINUE;
@@ -745,7 +747,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     private <E extends IAnimatable> PlayState petrifyPredicate(AnimationEvent<E> event) {
         if (this.isPetrifying && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.petrify", false));
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.petrify", ILoopType.EDefaultLoopTypes.PLAY_ONCE));
             this.isPetrifying = false;
         }
         return PlayState.CONTINUE;
@@ -754,7 +756,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     private <E extends IAnimatable> PlayState receivePredicate(AnimationEvent<E> event) {
         if (this.isReceiving && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.receive", false));
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.receive", ILoopType.EDefaultLoopTypes.PLAY_ONCE));
             this.isReceiving = false;
         }
         return PlayState.CONTINUE;
@@ -763,7 +765,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
     private <E extends IAnimatable> PlayState givePredicate(AnimationEvent<E> event) {
         if (this.isGiving && event.getController().getAnimationState().equals(AnimationState.Stopped)) {
             event.getController().markNeedsReload();
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.give", false));
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.tuff_golem.give", ILoopType.EDefaultLoopTypes.PLAY_ONCE));
             this.isGiving = false;
         }
         return PlayState.CONTINUE;

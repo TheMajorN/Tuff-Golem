@@ -19,12 +19,6 @@ public class ModSensors<U extends Sensor<?>> {
     public static final RegistryObject<SensorType<NearestItemFrameSensor>> NEAREST_ITEM_FRAMES = SENSORS.register("nearest_item_frames",
             () -> new SensorType<>(NearestItemFrameSensor::new));
 
-    public static final RegistryObject<SensorType<NearestRedstoneLampSensor>> NEAREST_REDSTONE_LAMP_SENSOR = SENSORS.register("nearest_redstone_lamp",
-            () -> new SensorType<>(NearestRedstoneLampSensor::new));
-
-    public static final RegistryObject<SensorType<DetectStrayLightBlocks>> STRAY_LIGHT_SENSOR = SENSORS.register("stray_light_sensor",
-            () -> new SensorType<>(DetectStrayLightBlocks::new));
-
     public static final RegistryObject<SensorType<TemptingSensor>> TUFF_GOLEM_TEMPTATIONS = SENSORS.register("tuff_golem_temptations",
             () -> new SensorType<>(() -> new TemptingSensor(TuffGolemAi.getTemptations())));
 

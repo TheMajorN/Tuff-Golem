@@ -22,6 +22,7 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
@@ -134,7 +135,7 @@ public class TuffGolemRenderer extends ExtendedGeoEntityRenderer<TuffGolemEntity
 
     }
     private boolean shouldRenderAsBlock(ItemStack item) {
-        return item == this.mainHand
+        return item == animatable.getItemBySlot(EquipmentSlot.MAINHAND)
                 && item.getItem() instanceof BlockItem
                 && !(item.getItem() instanceof ItemNameBlockItem)
                 && !(item.getItem() instanceof StandingAndWallBlockItem)
