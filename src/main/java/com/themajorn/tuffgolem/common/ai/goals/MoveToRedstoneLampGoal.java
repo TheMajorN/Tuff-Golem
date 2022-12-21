@@ -1,4 +1,4 @@
-package com.themajorn.tuffgolem.common.ai.behaviors;
+package com.themajorn.tuffgolem.common.ai.goals;
 
 import com.themajorn.tuffgolem.common.entities.TuffGolemEntity;
 import net.minecraft.core.BlockPos;

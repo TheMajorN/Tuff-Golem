@@ -10,7 +10,6 @@ import com.themajorn.tuffgolem.core.registry.ModEntities;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.InteractionHand;
@@ -21,6 +20,7 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.animal.AbstractGolem;
 import net.minecraft.world.entity.animal.allay.AllayAi;
+import net.minecraft.world.entity.animal.goat.GoatAi;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.schedule.Activity;
@@ -33,7 +33,7 @@ import java.util.Optional;
 
 public class TuffGolemAi {
 
-    private static final UniformInt TIME_BETWEEN_ANIMATE_OR_PETRIFY = UniformInt.of(2400, 3600);
+    private static final UniformInt TIME_BETWEEN_ANIMATE_OR_PETRIFY = UniformInt.of(200, 300);
     private static final UniformInt TIME_BETWEEN_GOING_TO_ITEM_FRAME = UniformInt.of(1200, 1800);
 
     public static void initMemories(TuffGolemEntity tuffGolem, RandomSource random) {
@@ -44,10 +44,9 @@ public class TuffGolemAi {
     public static Brain<?> makeBrain(Brain<TuffGolemEntity> brain) {
         initCoreActivity(brain);
         initIdleActivity(brain);
+        //initPetrifyOrAnimateActivity(brain);
         initTakeItemFromFrameActivity(brain);
         initReturnItemToFrameActivity(brain);
-        initPetrifyOrAnimateActivity(brain);
-        //initMoveToRedstoneLampActivity(brain);
         brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
         brain.setDefaultActivity(Activity.IDLE);
         brain.useDefaultActivity();
@@ -109,24 +108,13 @@ public class TuffGolemAi {
     private static void initPetrifyOrAnimateActivity(Brain<TuffGolemEntity> brain) {
         brain.addActivityWithConditions(ModActivities.ANIMATE_PETRIFY.get(),
             ImmutableList.of(
-                Pair.of(0, new PetrifiedTime(TIME_BETWEEN_ANIMATE_OR_PETRIFY)),
-                Pair.of(1, new PetrifyOrAnimate<>(TIME_BETWEEN_ANIMATE_OR_PETRIFY, SoundEvents.GRINDSTONE_USE))),
+                //Pair.of(0, new PetrifiedTime(TIME_BETWEEN_ANIMATE_OR_PETRIFY)),
+                Pair.of(1, new PetrifyOrAnimate<>(TIME_BETWEEN_ANIMATE_OR_PETRIFY))),
             ImmutableSet.of(
                 Pair.of(MemoryModuleType.TEMPTING_PLAYER, MemoryStatus.VALUE_ABSENT),
                 Pair.of(ModMemoryModules.NEAREST_VISIBLE_ITEM_FRAME.get(), MemoryStatus.VALUE_ABSENT),
                 Pair.of(ModMemoryModules.ANIMATE_OR_PETRIFY_COOLDOWN_TICKS.get(), MemoryStatus.VALUE_ABSENT)
             ));
-    }
-
-    private static void initMoveToRedstoneLampActivity(Brain<TuffGolemEntity> brain) {
-        brain.addActivityWithConditions(ModActivities.MOVE_TO_REDSTONE_LAMP.get(),
-                ImmutableList.of(
-                        Pair.of(0, new MoveToRedstoneLamp((tuffgolem) -> true, 1.25F, true, 20))),
-                ImmutableSet.of(
-                        Pair.of(ModMemoryModules.MID_ANIMATE_OR_PETRIFY.get(), MemoryStatus.VALUE_ABSENT),
-                        Pair.of(MemoryModuleType.WALK_TARGET, MemoryStatus.VALUE_PRESENT),
-                        Pair.of(MemoryModuleType.TEMPTING_PLAYER, MemoryStatus.VALUE_ABSENT)
-                ));
     }
 
     public static void updateActivity(TuffGolemEntity tuffGolem) {

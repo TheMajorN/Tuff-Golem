@@ -3,7 +3,7 @@ package com.themajorn.tuffgolem.common.entities;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Dynamic;
 import com.themajorn.tuffgolem.common.ai.TuffGolemAi;
-import com.themajorn.tuffgolem.common.ai.behaviors.MoveToRedstoneLampGoal;
+import com.themajorn.tuffgolem.common.ai.goals.MoveToRedstoneLampGoal;
 import com.themajorn.tuffgolem.core.registry.ModMemoryModules;
 import com.themajorn.tuffgolem.core.registry.ModSensors;
 import com.themajorn.tuffgolem.core.registry.ModSounds;
@@ -28,14 +28,10 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
-import net.minecraft.world.entity.ai.goal.*;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.animal.AbstractGolem;
-import net.minecraft.world.entity.animal.Pufferfish;
-import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.InventoryCarrier;
@@ -43,7 +39,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
@@ -213,14 +208,17 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.playSound(SoundEvents.IRON_GOLEM_STEP, 0.15F, 2.0F);
     }
 
-    protected SoundEvent getHurtSound(DamageSource p_27517_) {
-        return SoundEvents.IRON_GOLEM_HURT;
+    protected void playHurtSound(DamageSource p_27517_) {
+        this.playSound(SoundEvents.IRON_GOLEM_HURT, 0.15F, 2.0F);
     }
 
     protected SoundEvent getDeathSound() {
         return SoundEvents.IRON_GOLEM_DEATH;
     }
 
+    protected void playBlockFallSound() {
+        this.playSound(SoundEvents.GOAT_RAM_IMPACT, 0.25F, 0.15F);
+    }
     // ========================================= SPAWNING & EXISTENCE =============================================== //
 
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor levelAccessor, DifficultyInstance difficulty,
@@ -237,6 +235,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         this.setPetrified(false);
         this.lockState(false);
         this.setPassengersRidingOffset(0.9D);
+        this.animate();
         return spawnGroupData;
     }
 
@@ -385,8 +384,8 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
             return InteractionResult.SUCCESS;
         }
 
-        // ANIMATE AND PETRIFY - DEBUG ONLY - REMOVE FOR FINAL VERSION
-        else if (itemInPlayerHand.is(Items.TUFF) && player.isCrouching()) {
+        // ANIMATE AND PETRIFY
+        else if (itemInPlayerHand.isEmpty() && player.isCrouching()) {
             if (this.isAnimated()) {
                 petrify();
             } else {
@@ -407,7 +406,11 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
 
         // TAKE ITEM FROM TUFF GOLEM
-        else if (!itemInTuffGolemHand.isEmpty() && hand == InteractionHand.MAIN_HAND && itemInPlayerHand.isEmpty()) {
+        else if (this.hasItemInHand()
+                && hand == InteractionHand.MAIN_HAND
+                && itemInPlayerHand.isEmpty()
+                || itemInPlayerHand == itemInTuffGolemHand
+                && !player.isCrouching()) {
             this.isGiving = true;
             this.playSound(ModSounds.GIVE_SOUND.get(), 0.3F, 1.0F);
             this.swing(InteractionHand.MAIN_HAND);
