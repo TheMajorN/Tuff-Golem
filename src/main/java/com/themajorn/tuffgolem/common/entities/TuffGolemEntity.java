@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -36,6 +37,7 @@ import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.InventoryCarrier;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -385,7 +387,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         }
 
         // ANIMATE AND PETRIFY
-        else if (itemInPlayerHand.isEmpty() && player.isCrouching()) {
+        else if (itemInPlayerHand.isEmpty() && player.isCrouching() && !stateLocked()) {
             if (this.isAnimated()) {
                 petrify();
             } else {
@@ -408,9 +410,9 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
         // TAKE ITEM FROM TUFF GOLEM
         else if (this.hasItemInHand()
                 && hand == InteractionHand.MAIN_HAND
+                && !player.isCrouching()
                 && itemInPlayerHand.isEmpty()
-                || itemInPlayerHand == itemInTuffGolemHand
-                && !player.isCrouching()) {
+                || itemInPlayerHand == itemInTuffGolemHand) {
             this.isGiving = true;
             this.playSound(ModSounds.GIVE_SOUND.get(), 0.3F, 1.0F);
             this.swing(InteractionHand.MAIN_HAND);
@@ -428,7 +430,7 @@ public class TuffGolemEntity extends AbstractGolem implements IAnimatable, Inven
 
     // =========================================== INVENTORY & LOOT ================================================= //
 
-    public SimpleContainer getInventory() { return this.inventory; }
+    public @NotNull SimpleContainer getInventory() { return this.inventory; }
 
     public boolean canPickUpLoot() { return !this.hasItemInHand() && this.hasCloak(); }
 
